@@ -13,6 +13,19 @@
 		7F30AC161AC7FBF700F85184 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7F30AC151AC7FBF700F85184 /* Images.xcassets */; };
 		7F30AC191AC7FBF800F85184 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7F30AC171AC7FBF800F85184 /* Main.storyboard */; };
 		7F30AC251AC7FBF800F85184 /* MPUtilsTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC241AC7FBF800F85184 /* MPUtilsTests.m */; };
+		7F30AC301AC7FC1600F85184 /* CouchbaseLite.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC2F1AC7FC1600F85184 /* CouchbaseLite.framework */; };
+		7F30AC311AC7FC1E00F85184 /* CouchbaseLite.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC2F1AC7FC1600F85184 /* CouchbaseLite.framework */; };
+		7F30AC321AC7FC1E00F85184 /* CouchbaseLite.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC2F1AC7FC1600F85184 /* CouchbaseLite.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		7F30AC351AC7FC2800F85184 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC341AC7FC2800F85184 /* CFNetwork.framework */; };
+		7F30AC371AC7FC2E00F85184 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC361AC7FC2E00F85184 /* Security.framework */; };
+		7F30AC391AC7FC4000F85184 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC381AC7FC4000F85184 /* SystemConfiguration.framework */; };
+		7F30AC3B1AC7FC4A00F85184 /* libsqlite3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC3A1AC7FC4A00F85184 /* libsqlite3.dylib */; };
+		7F30AC3D1AC7FC5400F85184 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC3C1AC7FC5400F85184 /* libz.dylib */; };
+		7F30AC441AC7FC9900F85184 /* NSString+Hashes.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC411AC7FC9900F85184 /* NSString+Hashes.m */; };
+		7F30AC481AC7FCC300F85184 /* CHCSVParser.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC471AC7FCC300F85184 /* CHCSVParser.m */; };
+		7F30AC551AC7FD1700F85184 /* ExportRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC541AC7FD1700F85184 /* ExportRequest.m */; };
+		7F30AC581AC7FE6E00F85184 /* MPUConstants.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC571AC7FE6E00F85184 /* MPUConstants.m */; };
+		7F30AC5C1AC7FE8700F85184 /* NewProjectViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -24,6 +37,20 @@
 			remoteInfo = MPUtils;
 		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		7F30AC331AC7FC1E00F85184 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				7F30AC321AC7FC1E00F85184 /* CouchbaseLite.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		7F30AC081AC7FBF700F85184 /* MPUtils.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MPUtils.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -38,6 +65,22 @@
 		7F30AC1E1AC7FBF800F85184 /* MPUtilsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MPUtilsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7F30AC231AC7FBF800F85184 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		7F30AC241AC7FBF800F85184 /* MPUtilsTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MPUtilsTests.m; sourceTree = "<group>"; };
+		7F30AC2F1AC7FC1600F85184 /* CouchbaseLite.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CouchbaseLite.framework; sourceTree = "<group>"; };
+		7F30AC341AC7FC2800F85184 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
+		7F30AC361AC7FC2E00F85184 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		7F30AC381AC7FC4000F85184 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
+		7F30AC3A1AC7FC4A00F85184 /* libsqlite3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsqlite3.dylib; path = usr/lib/libsqlite3.dylib; sourceTree = SDKROOT; };
+		7F30AC3C1AC7FC5400F85184 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
+		7F30AC401AC7FC9900F85184 /* NSString+Hashes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Hashes.h"; sourceTree = "<group>"; };
+		7F30AC411AC7FC9900F85184 /* NSString+Hashes.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Hashes.m"; sourceTree = "<group>"; };
+		7F30AC461AC7FCC300F85184 /* CHCSVParser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CHCSVParser.h; path = CHCSVParser/CHCSVParser.h; sourceTree = "<group>"; };
+		7F30AC471AC7FCC300F85184 /* CHCSVParser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CHCSVParser.m; path = CHCSVParser/CHCSVParser.m; sourceTree = "<group>"; };
+		7F30AC531AC7FD1700F85184 /* ExportRequest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ExportRequest.h; sourceTree = "<group>"; };
+		7F30AC541AC7FD1700F85184 /* ExportRequest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ExportRequest.m; sourceTree = "<group>"; };
+		7F30AC561AC7FE6E00F85184 /* MPUConstants.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPUConstants.h; sourceTree = "<group>"; };
+		7F30AC571AC7FE6E00F85184 /* MPUConstants.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPUConstants.m; sourceTree = "<group>"; };
+		7F30AC5A1AC7FE8700F85184 /* NewProjectViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NewProjectViewController.h; sourceTree = "<group>"; };
+		7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NewProjectViewController.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -45,6 +88,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7F30AC3D1AC7FC5400F85184 /* libz.dylib in Frameworks */,
+				7F30AC3B1AC7FC4A00F85184 /* libsqlite3.dylib in Frameworks */,
+				7F30AC391AC7FC4000F85184 /* SystemConfiguration.framework in Frameworks */,
+				7F30AC371AC7FC2E00F85184 /* Security.framework in Frameworks */,
+				7F30AC351AC7FC2800F85184 /* CFNetwork.framework in Frameworks */,
+				7F30AC311AC7FC1E00F85184 /* CouchbaseLite.framework in Frameworks */,
+				7F30AC301AC7FC1600F85184 /* CouchbaseLite.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -62,6 +112,9 @@
 			isa = PBXGroup;
 			children = (
 				7F30AC0A1AC7FBF700F85184 /* MPUtils */,
+				7F30AC491AC7FCC900F85184 /* CHCSVParser */,
+				7F30AC3E1AC7FC9900F85184 /* NSString-Hashes */,
+				7F30AC2E1AC7FC1600F85184 /* Frameworks */,
 				7F30AC211AC7FBF800F85184 /* MPUtilsTests */,
 				7F30AC091AC7FBF700F85184 /* Products */,
 			);
@@ -79,12 +132,14 @@
 		7F30AC0A1AC7FBF700F85184 /* MPUtils */ = {
 			isa = PBXGroup;
 			children = (
+				7F30AC531AC7FD1700F85184 /* ExportRequest.h */,
+				7F30AC541AC7FD1700F85184 /* ExportRequest.m */,
 				7F30AC0D1AC7FBF700F85184 /* AppDelegate.h */,
 				7F30AC0E1AC7FBF700F85184 /* AppDelegate.m */,
 				7F30AC121AC7FBF700F85184 /* ViewController.h */,
 				7F30AC131AC7FBF700F85184 /* ViewController.m */,
 				7F30AC151AC7FBF700F85184 /* Images.xcassets */,
-				7F30AC171AC7FBF800F85184 /* Main.storyboard */,
+				7F30AC591AC7FE8700F85184 /* View */,
 				7F30AC0B1AC7FBF700F85184 /* Supporting Files */,
 			);
 			path = MPUtils;
@@ -93,6 +148,8 @@
 		7F30AC0B1AC7FBF700F85184 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
+				7F30AC561AC7FE6E00F85184 /* MPUConstants.h */,
+				7F30AC571AC7FE6E00F85184 /* MPUConstants.m */,
 				7F30AC0C1AC7FBF700F85184 /* Info.plist */,
 				7F30AC101AC7FBF700F85184 /* main.m */,
 			);
@@ -116,6 +173,47 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
+		7F30AC2E1AC7FC1600F85184 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				7F30AC3C1AC7FC5400F85184 /* libz.dylib */,
+				7F30AC3A1AC7FC4A00F85184 /* libsqlite3.dylib */,
+				7F30AC381AC7FC4000F85184 /* SystemConfiguration.framework */,
+				7F30AC361AC7FC2E00F85184 /* Security.framework */,
+				7F30AC341AC7FC2800F85184 /* CFNetwork.framework */,
+				7F30AC2F1AC7FC1600F85184 /* CouchbaseLite.framework */,
+			);
+			path = Frameworks;
+			sourceTree = "<group>";
+		};
+		7F30AC3E1AC7FC9900F85184 /* NSString-Hashes */ = {
+			isa = PBXGroup;
+			children = (
+				7F30AC401AC7FC9900F85184 /* NSString+Hashes.h */,
+				7F30AC411AC7FC9900F85184 /* NSString+Hashes.m */,
+			);
+			path = "NSString-Hashes";
+			sourceTree = "<group>";
+		};
+		7F30AC491AC7FCC900F85184 /* CHCSVParser */ = {
+			isa = PBXGroup;
+			children = (
+				7F30AC461AC7FCC300F85184 /* CHCSVParser.h */,
+				7F30AC471AC7FCC300F85184 /* CHCSVParser.m */,
+			);
+			name = CHCSVParser;
+			sourceTree = "<group>";
+		};
+		7F30AC591AC7FE8700F85184 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				7F30AC171AC7FBF800F85184 /* Main.storyboard */,
+				7F30AC5A1AC7FE8700F85184 /* NewProjectViewController.h */,
+				7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -126,6 +224,7 @@
 				7F30AC041AC7FBF700F85184 /* Sources */,
 				7F30AC051AC7FBF700F85184 /* Frameworks */,
 				7F30AC061AC7FBF700F85184 /* Resources */,
+				7F30AC331AC7FC1E00F85184 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -218,6 +317,11 @@
 				7F30AC141AC7FBF700F85184 /* ViewController.m in Sources */,
 				7F30AC111AC7FBF700F85184 /* main.m in Sources */,
 				7F30AC0F1AC7FBF700F85184 /* AppDelegate.m in Sources */,
+				7F30AC581AC7FE6E00F85184 /* MPUConstants.m in Sources */,
+				7F30AC551AC7FD1700F85184 /* ExportRequest.m in Sources */,
+				7F30AC5C1AC7FE8700F85184 /* NewProjectViewController.m in Sources */,
+				7F30AC481AC7FCC300F85184 /* CHCSVParser.m in Sources */,
+				7F30AC441AC7FC9900F85184 /* NSString+Hashes.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -246,6 +350,7 @@
 				7F30AC181AC7FBF800F85184 /* Base */,
 			);
 			name = Main.storyboard;
+			path = ..;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
@@ -332,8 +437,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Frameworks",
+				);
 				INFOPLIST_FILE = MPUtils/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -343,8 +453,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Frameworks",
+				);
 				INFOPLIST_FILE = MPUtils/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -404,6 +519,7 @@
 				7F30AC2A1AC7FBF800F85184 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		7F30AC2B1AC7FBF800F85184 /* Build configuration list for PBXNativeTarget "MPUtilsTests" */ = {
 			isa = XCConfigurationList;
@@ -412,6 +528,7 @@
 				7F30AC2D1AC7FBF800F85184 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
