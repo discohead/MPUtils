@@ -25,6 +25,7 @@
 		7F30AC551AC7FD1700F85184 /* ExportRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC541AC7FD1700F85184 /* ExportRequest.m */; };
 		7F30AC581AC7FE6E00F85184 /* MPUConstants.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC571AC7FE6E00F85184 /* MPUConstants.m */; };
 		7F30AC5C1AC7FE8700F85184 /* NewProjectViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */; };
+		7F30AC611AC8007700F85184 /* NSString+Hashes.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC601AC8007700F85184 /* NSString+Hashes.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -78,6 +79,8 @@
 		7F30AC571AC7FE6E00F85184 /* MPUConstants.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPUConstants.m; sourceTree = "<group>"; };
 		7F30AC5A1AC7FE8700F85184 /* NewProjectViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NewProjectViewController.h; sourceTree = "<group>"; };
 		7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NewProjectViewController.m; sourceTree = "<group>"; };
+		7F30AC5F1AC8007700F85184 /* NSString+Hashes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Hashes.h"; sourceTree = "<group>"; };
+		7F30AC601AC8007700F85184 /* NSString+Hashes.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Hashes.m"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -110,6 +113,7 @@
 			children = (
 				7F30AC0A1AC7FBF700F85184 /* MPUtils */,
 				7F30AC491AC7FCC900F85184 /* CHCSVParser */,
+				7F30AC5E1AC8006200F85184 /* NSString+Hashes */,
 				7F30AC2E1AC7FC1600F85184 /* Frameworks */,
 				7F30AC211AC7FBF800F85184 /* MPUtilsTests */,
 				7F30AC091AC7FBF700F85184 /* Products */,
@@ -199,6 +203,15 @@
 				7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */,
 			);
 			path = View;
+			sourceTree = "<group>";
+		};
+		7F30AC5E1AC8006200F85184 /* NSString+Hashes */ = {
+			isa = PBXGroup;
+			children = (
+				7F30AC5F1AC8007700F85184 /* NSString+Hashes.h */,
+				7F30AC601AC8007700F85184 /* NSString+Hashes.m */,
+			);
+			name = "NSString+Hashes";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -304,6 +317,7 @@
 				7F30AC141AC7FBF700F85184 /* ViewController.m in Sources */,
 				7F30AC111AC7FBF700F85184 /* main.m in Sources */,
 				7F30AC0F1AC7FBF700F85184 /* AppDelegate.m in Sources */,
+				7F30AC611AC8007700F85184 /* NSString+Hashes.m in Sources */,
 				7F30AC581AC7FE6E00F85184 /* MPUConstants.m in Sources */,
 				7F30AC551AC7FD1700F85184 /* ExportRequest.m in Sources */,
 				7F30AC5C1AC7FE8700F85184 /* NewProjectViewController.m in Sources */,
