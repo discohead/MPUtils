@@ -37,6 +37,12 @@ extern NSString *const kMPValueEventsNamesTypeGeneral;
 extern NSString *const kMPValueEventsNamesTypeUnique;
 extern NSString *const kMPValueEventsNamesTypeAverage;
 
+#pragma mark - Export Results Keys
+
+extern NSString *const kMPPeopleKeyResults;
+extern NSString *const kMPPeopleKeySessionID;
+extern NSString *const kMPPeopleKeyPage;
+
 #pragma mark - NSUserDefaults Keys
 
 extern NSString *const kMPUserDefaultsProjectsKey;
@@ -46,4 +52,55 @@ extern NSString *const kMPUserDefaultsProjectTokenKey;
 extern NSString *const kMPUserDefaultsProjectNameKey;
 extern NSString *const kMPuserDefaultsUIProjectNamesKey;
 
+#pragma mark - NSNotificationCenter
+
+extern NSString *const kMPCSVWritingBegan;
+extern NSString *const kMPCSVWritingEnded;
+extern NSString *const kMPExportBegan;
+extern NSString *const kMPExportUpdate;
+extern NSString *const kMPExportEnd;
+extern NSString *const kMPUserInfoKeyCount;
+extern NSString *const kMPUserInfoKeyType;
+extern NSString *const kMPStatusUpdate;
+extern NSString *const kMPUserInfoKeyStatus;
+
+#pragma mark - Couchbase Lite
+
+extern NSString *const kMPCBLDatabaseName;
+extern NSString *const kMPCBLThreadName;
+
+extern NSString *const kMPCBLDocumentTypeEvent;
+extern NSString *const kMPCBLDocumentTypePeopleProfile;
+extern NSString *const kMPCBLDocumentTypeEventProperties;
+extern NSString *const kMPCBLDocumentTypePeopleProperties;
+
+extern NSString *const kMPCBLDocumentKeyType;
+extern NSString *const kMPCBLDocumentKeyID;
+extern NSString *const kMPCBLDocumentKeyEventPropertyKeys;
+extern NSString *const kMPCBLDocumentKeyPeoplePropertyKeys;
+extern NSString *const kMPCBLDocumentKeyTransactionPropertyKeys;
+
+extern NSString *const kMPCBLPeopleDocumentKeyDistinctID;
+extern NSString *const kMPCBLPeopleDocumentKeyProperties;
+extern NSString *const kMPCBLPeopleDocumentKeyTransactions;
+
+extern NSString *const kMPCBLEventDocumentKeyEvent;
+extern NSString *const kMPCBLEventDocumentKeyProperties;
+extern NSString *const kMPCBLEventDocumentKeyDistinctID;
+
+extern NSString *const kMPCBLDocumentIDEventProperties;
+extern NSString *const kMPCBLDocumentIDPeopleProperties;
+extern NSString *const kMPCBLDocumentIDTransactionProperties;
+
+extern NSString *const kMPCBLViewNameEvents;
+extern NSString *const kMPCBLViewNameEventDistinctIDs;
+extern NSString *const kMPCBLViewNamePeople;
+extern NSString *const kMPCBLViewNameCombined;
+extern NSString *const kMPCBLViewNameTransactions;
+extern NSString *const kMPCBLViewNameEventCount;
+extern NSString *const kMPCBLViewNameEventProperties;
+extern NSString *const kMPCBLViewNamePeopleCount;
+extern NSString *const kmPCBlViewNamePeopleProperties;
+
 @end
+

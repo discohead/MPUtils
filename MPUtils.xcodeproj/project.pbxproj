@@ -26,6 +26,8 @@
 		7F30AC581AC7FE6E00F85184 /* MPUConstants.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC571AC7FE6E00F85184 /* MPUConstants.m */; };
 		7F30AC5C1AC7FE8700F85184 /* NewProjectViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */; };
 		7F30AC611AC8007700F85184 /* NSString+Hashes.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC601AC8007700F85184 /* NSString+Hashes.m */; };
+		7F609C771AC845EF00807CA6 /* CSVParser.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F609C761AC845EF00807CA6 /* CSVParser.m */; };
+		7F862C7B1AD5885900968B1D /* ProjectEditViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F862C7A1AD5885900968B1D /* ProjectEditViewController.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -81,6 +83,10 @@
 		7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NewProjectViewController.m; sourceTree = "<group>"; };
 		7F30AC5F1AC8007700F85184 /* NSString+Hashes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Hashes.h"; sourceTree = "<group>"; };
 		7F30AC601AC8007700F85184 /* NSString+Hashes.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Hashes.m"; sourceTree = "<group>"; };
+		7F609C751AC845EF00807CA6 /* CSVParser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CSVParser.h; sourceTree = "<group>"; };
+		7F609C761AC845EF00807CA6 /* CSVParser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CSVParser.m; sourceTree = "<group>"; };
+		7F862C791AD5885900968B1D /* ProjectEditViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ProjectEditViewController.h; sourceTree = "<group>"; };
+		7F862C7A1AD5885900968B1D /* ProjectEditViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProjectEditViewController.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -138,6 +144,8 @@
 				7F30AC0E1AC7FBF700F85184 /* AppDelegate.m */,
 				7F30AC121AC7FBF700F85184 /* ViewController.h */,
 				7F30AC131AC7FBF700F85184 /* ViewController.m */,
+				7F609C751AC845EF00807CA6 /* CSVParser.h */,
+				7F609C761AC845EF00807CA6 /* CSVParser.m */,
 				7F30AC151AC7FBF700F85184 /* Images.xcassets */,
 				7F30AC591AC7FE8700F85184 /* View */,
 				7F30AC0B1AC7FBF700F85184 /* Supporting Files */,
@@ -198,6 +206,8 @@
 		7F30AC591AC7FE8700F85184 /* View */ = {
 			isa = PBXGroup;
 			children = (
+				7F862C791AD5885900968B1D /* ProjectEditViewController.h */,
+				7F862C7A1AD5885900968B1D /* ProjectEditViewController.m */,
 				7F30AC171AC7FBF800F85184 /* Main.storyboard */,
 				7F30AC5A1AC7FE8700F85184 /* NewProjectViewController.h */,
 				7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */,
@@ -314,7 +324,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7F862C7B1AD5885900968B1D /* ProjectEditViewController.m in Sources */,
 				7F30AC141AC7FBF700F85184 /* ViewController.m in Sources */,
+				7F609C771AC845EF00807CA6 /* CSVParser.m in Sources */,
 				7F30AC111AC7FBF700F85184 /* main.m in Sources */,
 				7F30AC0F1AC7FBF700F85184 /* AppDelegate.m in Sources */,
 				7F30AC611AC8007700F85184 /* NSString+Hashes.m in Sources */,
@@ -440,6 +452,10 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Frameworks",
+				);
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
 				);
 				INFOPLIST_FILE = MPUtils/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
