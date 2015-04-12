@@ -33,10 +33,10 @@
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingBegan object:nil];
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
     __block CBLManager *manager = appDelegate.manager;
+    __block CBLDatabase *database = appDelegate.database;
     
     dispatch_async(manager.dispatchQueue, ^{
         NSError *databaseError;
-        CBLDatabase *database = [manager databaseNamed:kMPCBLDatabaseName error:&databaseError];
         if (!databaseError)
         {
             CBLView *eventPropsView = [database viewNamed:kMPCBLViewNameEventProperties];

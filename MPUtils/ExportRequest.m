@@ -11,8 +11,9 @@
 #import "NSString+Hashes.h"
 #import "AppDelegate.h"
 #import <CouchbaseLite/CouchbaseLite.h>
+#import <SBJson/SBJson4.h>
 
-@interface ExportRequest () <NSURLSessionDataDelegate>
+@interface ExportRequest () <NSURLSessionDelegate, NSURLSessionTaskDelegate, NSURLSessionDataDelegate>
 
 @property (strong, nonatomic) NSString *apiKey;
 @property (strong, nonatomic) NSString *apiSecret;
@@ -22,28 +23,62 @@
 @property (strong, nonatomic) NSMutableSet *transactionPropsSet;
 @property (strong, nonatomic) NSString *whereClause;
 @property (nonatomic) dispatch_queue_t downloadQueue;
-@property (strong, nonatomic) NSMutableData *rawEventData;
-@property (strong, nonatomic) NSInputStream *inputStream;
+@property (strong, nonatomic) NSMutableArray *events;
+@property (strong, nonatomic) SBJson4Parser *jsonParser;
+@property (strong, nonatomic) NSString *requestType;
+@property (nonatomic) NSUInteger batchIndex;
+@property (nonatomic) NSUInteger eventCount;
 @end
 
 @implementation ExportRequest
 
-- (NSInputStream *)inputStream
+- (NSUInteger)eventCount
 {
-    if (!_inputStream)
+    if (!_eventCount)
     {
-        _inputStream = [[NSInputStream alloc] init];
+        _eventCount = 0;
     }
-    return _inputStream;
+    return _eventCount;
 }
 
-- (NSData *)rawEventData
+- (NSUInteger)batchIndex
 {
-    if (!_rawEventData)
+    if (!_batchIndex)
     {
-        _rawEventData = [NSMutableData data];
+        _batchIndex = 0;
     }
-    return _rawEventData;
+    return _batchIndex;
+}
+
+- (NSString *)requestType
+{
+    if (!_requestType)
+    {
+        _requestType = [NSString string];
+    }
+    return _requestType;
+}
+
+- (NSMutableArray *)events
+{
+    if (!_events)
+    {
+        _events = [NSMutableArray array];
+    }
+    return _events;
+}
+
+- (SBJson4Parser *)jsonParser
+{
+    if (!_jsonParser)
+    {
+        _jsonParser = [SBJson4Parser multiRootParserWithBlock:^(id item, BOOL *stop) {
+            [self.events addObject:item];
+        } errorHandler:^(NSError *error) {
+            [self updateStatusWithString:[NSString stringWithFormat:@"SBJson4Parser error: %@", error.localizedDescription]];
+        }];
+    }
+    return _jsonParser;
 }
 
 - (NSNumber *)totalProfiles
@@ -143,7 +178,7 @@
     NSURLSessionConfiguration* sessionConfig = [NSURLSessionConfiguration defaultSessionConfiguration];
     
     /* Create session, and optionally set a NSURLSessionDelegate. */
-    NSURLSession* session = [NSURLSession sessionWithConfiguration:sessionConfig delegate:nil delegateQueue:nil];
+    NSURLSession* session = [NSURLSession sessionWithConfiguration:sessionConfig delegate:self delegateQueue:nil];
     
     // Update params with API Key, expire and sig
     NSMutableDictionary *params = [URLParams mutableCopy];
@@ -163,34 +198,127 @@
     request.HTTPMethod = @"GET";
 
     /* Start a new Task */
-    NSURLSessionDataTask* task = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-        [self updateStatusWithString:[NSString stringWithFormat:@"HTTP Status Code = %lu", httpResponse.statusCode]];
-        
-        if (error == nil) {
-            // Success
-            if ([response.URL.lastPathComponent isEqualToString:@"export"])
-            {
-                [self eventsResultsHandler:data];
-            } else if ([response.URL.lastPathComponent isEqualToString:@"engage"])
-            {
+    NSURLSessionDataTask *task;
+    
+    if ([self.requestType isEqualToString:@"people"])
+    {
+        task = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+            NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+            [self updateStatusWithString:[NSString stringWithFormat:@"HTTP Status Code = %lu", httpResponse.statusCode]];
+            
+            if (error == nil) {
+                // Success
                 [self peopleResultsHandler:data];
-            } else
-            {
-                [self dataResultsHandler:data fromURL:response.URL];
             }
-        }
-        else {
-            // Failure
-            [self updateStatusWithString:[NSString stringWithFormat:@"URL Session Task Failed: %@", [error localizedDescription]]];
-        }
-    }];
+            else {
+                // Failure
+                [self updateStatusWithString:[NSString stringWithFormat:@"URL Session Task Failed: %@", [error localizedDescription]]];
+            }
+            [session invalidateAndCancel];
+        }];
+    } else if ([self.requestType isEqualToString:@"events"])
+    {
+        task = [session dataTaskWithRequest:request];
+    }
     [task resume];
     
 }
 
+- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveData:(NSData *)data
+{
+    if ([self.requestType isEqualToString:@"events"])
+    {
+        switch ([self.jsonParser parse:data])
+        {
+            case SBJson4ParserStopped:
+            case SBJson4ParserComplete:
+                [self updateStatusWithString:[NSString stringWithFormat:@"%lu Events Parsed", self.events.count]];
+                break;
+            case SBJson4ParserWaitingForData:
+                [self updateStatusWithString:[NSString stringWithFormat:@"SBJSON4ParserWaitingForData, %lu events", self.events.count]];
+                break;
+            case SBJson4ParserError:
+                [self updateStatusWithString:@"SBJSON4ParserError!"];
+                break;
+            default:
+                break;
+        }
+        NSArray *eventBatch = [self.events copy];
+        self.eventCount += eventBatch.count;
+        [self.events removeObjectsInArray:eventBatch];
+        [self storeEvents:eventBatch];
+    }
+}
+
+- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveResponse:(NSURLResponse *)response completionHandler:(void (^)(NSURLSessionResponseDisposition))completionHandler
+{
+    NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+    [self updateStatusWithString:[NSString stringWithFormat:@"HTTP Status Code = %lu", httpResponse.statusCode]];
+    completionHandler(NSURLSessionResponseAllow);
+}
+
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error
+{
+    if (error)
+    {
+        [self updateStatusWithString:[NSString stringWithFormat:@"NSURLSessionTask Error: %@", error.localizedDescription]];
+    } else
+    {
+        [self updateStatusWithString:@"NSURLSessionTask Complete"];
+    }
+    [session invalidateAndCancel];
+    NSDictionary *userInfo = @{kMPUserInfoKeyCount:@(self.eventCount),kMPUserInfoKeyType:@"event"};
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportEnd object:nil userInfo:userInfo];
+}
+
+- (void)storeEvents:(NSArray *)eventBatch
+{
+    AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
+    __block CBLManager *manager = appDelegate.manager;
+    __block CBLDatabase *database = appDelegate.database;
+    
+    dispatch_async(manager.dispatchQueue, ^{
+        NSError *dbError;
+        if (!dbError)
+        {
+            BOOL transaction = [database inTransaction:^BOOL{
+                for (NSDictionary *event in eventBatch)
+                {
+                    CBLDocument *document = [database createDocument];
+                    NSError *documentError;
+                    NSMutableDictionary *mutableEvent = [event mutableCopy];
+                    [mutableEvent setObject:kMPCBLDocumentTypeEvent forKey:kMPCBLDocumentKeyType];
+                    [document putProperties:mutableEvent error:&documentError];
+                    if (documentError)
+                    {
+                        [self updateStatusWithString:[NSString stringWithFormat:@"Error putting properties into document. Error Message: %@", documentError.localizedDescription]];
+                        return NO;
+                    }
+                }
+                return YES;
+            }];
+            if (transaction)
+            {
+                [self updateStatusWithString:[NSString stringWithFormat:@"Event Batch %lu saved successfully!", self.batchIndex]];
+                self.batchIndex++;
+                NSDictionary *userInfo = @{kMPUserInfoKeyCount:@(self.eventCount),kMPUserInfoKeyType:@"event"};
+                [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportEnd object:nil userInfo:userInfo];
+            } else
+            {
+                [self updateStatusWithString:[NSString stringWithFormat:@"Failed to save event batch %lu! Rolling back...", self.batchIndex]];
+                self.batchIndex++;
+            }
+        } else
+        {
+            [self updateStatusWithString:[NSString stringWithFormat:@"Error getting database. Error message: %@", dbError.localizedDescription]];
+        }
+        
+    });
+}
+
 - (void)requestForEvents:(NSArray *)events fromDate:(NSDate *)fromDate toDate:(NSDate *)toDate where:(NSString *)whereClause
 {
+    self.requestType = @"events";
     
     NSString *fromDateString = [self.dateFormatter stringFromDate:fromDate];
     NSString *toDateString = [self.dateFormatter stringFromDate:toDate];
@@ -206,6 +334,7 @@
 
 - (void)requestForPeopleWhere:(NSString *)whereClause sessionID:(NSString *)sessionID page:(NSUInteger)page
 {
+    self.requestType = @"people";
     self.whereClause = whereClause;
     NSMutableDictionary *URLParams = [NSMutableDictionary dictionary];
     if (whereClause && ![whereClause isEqualToString:@""]) [URLParams setObject:whereClause forKey:kMPParameterWhere];
@@ -224,6 +353,7 @@
 {
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
     __block CBLManager *manager = appDelegate.manager;
+    __block CBLDatabase *database = appDelegate.database;
     
     NSError *jsonError;
     NSString *jsonString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
@@ -251,7 +381,6 @@
     
     dispatch_sync(manager.dispatchQueue, ^{
         NSError *dbError;
-        CBLDatabase *database = [manager databaseNamed:kMPCBLDatabaseName error:&dbError];
         
         if (!dbError)
         {
