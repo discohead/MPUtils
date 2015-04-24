@@ -35,6 +35,8 @@
 
 @implementation ViewController
 
+#pragma mark - Lazy Properties
+
 - (NSDateFormatter *)dateFormatter
 {
     if (!_dateFormatter) {
@@ -73,177 +75,96 @@
     return [NSUserDefaultsController sharedUserDefaultsController];
 }
 
+#pragma mark - View Life Cycle
+
 - (void)awakeFromNib
 {
     [super awakeFromNib];
-    NSTimeInterval minusOneDay = -24*60*60;
-    NSTimeInterval minusThirtyDays = minusOneDay*30;
-    NSDate *yesterday = [[NSDate date] dateByAddingTimeInterval:minusOneDay];
-    NSDate *monthAgo = [[NSDate date] dateByAddingTimeInterval:minusThirtyDays];
-    self.fromDatePicker.dateValue = monthAgo;
-    self.toDatePicker.dateValue = yesterday;
-    
-    
-}
-
-
-- (void)updateCountLabels {
-    self.eventCountLabel.stringValue = [NSString stringWithFormat:@"%@ Events Loaded", [self eventCount]];
-    self.peopleCountLabel.stringValue = [NSString stringWithFormat:@"%@ People Loaded", [self peopleCount]];
-}
-
-- (NSNumber *)eventCount
-{
-    AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
-    __block CBLManager *manager = appDelegate.manager;
-    __block NSNumber *eventCount;
-    
-    dispatch_sync(manager.dispatchQueue, ^{
-        NSError *dbError;
-        
-        CBLDatabase *database = [manager databaseNamed:kMPCBLDatabaseName error:&dbError];
-        if (dbError)
-        {
-            NSLog(@"Error loading database. Error message: %@", dbError.localizedDescription);
-        } else
-        {
-            CBLView *eventView = [database viewNamed:kMPCBLViewNameEvents];
-            CBLQuery *eventQuery = [eventView createQuery];
-            NSError *eventError;
-            CBLQueryEnumerator *eventEnum = [eventQuery run:&eventError];
-            if (eventError)
-            {
-                NSLog(@"Error querying events. Error messsage: %@",eventError.localizedDescription);
-                eventCount = @(-1);
-            } else
-            {
-                if ([eventEnum count])
-                {
-                    eventCount = [[eventEnum rowAtIndex:0] value];
-                } else
-                {
-                    eventCount = @0;
-                }
-            }
-        }
-    });
-    return eventCount;
-    
-}
-
-- (NSNumber *)peopleCount
-{
-    AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
-    __block CBLManager *manager = appDelegate.manager;
-    __block NSNumber *peopleCount;
-    
-    dispatch_sync(manager.dispatchQueue, ^{
-        NSError *dbError;
-        
-        CBLDatabase *database = [manager databaseNamed:kMPCBLDatabaseName error:&dbError];
-        if (dbError)
-        {
-            NSLog(@"Error loading database. Error message: %@", dbError.localizedDescription);
-        } else
-        {
-            
-            NSError *peopleError;
-            CBLView *peopleView = [database viewNamed:kMPCBLViewNamePeople];
-            CBLQuery *peopleQuery = [peopleView createQuery];
-            CBLQueryEnumerator *peopleEnum = [peopleQuery run:&peopleError];
-            if (peopleError)
-            {
-                NSLog(@"Error querying people. Error message: %@",peopleError.localizedDescription);
-                peopleCount = @(-1);
-            } else
-            {
-                if ([peopleEnum count])
-                {
-                    peopleCount = [[peopleEnum rowAtIndex:0] value];
-                } else
-                {
-                    peopleCount = @0;
-                }
-                
-            }
-        }
-        
-    });
-    
-    return peopleCount;
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveCSVNotification:) name:kMPCSVWritingBegan object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveCSVNotification:) name:kMPCSVWritingEnded object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveExportNotification:) name:kMPExportBegan object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveExportNotification:) name:kMPExportUpdate object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveExportNotification:) name:kMPExportEnd object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveStatusUpdate:) name:kMPStatusUpdate object:nil];
+    [self registerForNotifications];
+    [self restorePreviousSettings];
 
 }
+
+#pragma mark - IBActions
 
 - (IBAction)projectSelected:(NSPopUpButton *)sender {
     NSDictionary *project = self.projects[sender.indexOfSelectedItem];
     [self appendToStatusLog:[NSString stringWithFormat:@"Selected Project = %@", project]];
-}
-
-- (void)setRepresentedObject:(id)representedObject {
-    [super setRepresentedObject:representedObject];
-
-    // Update the view, if already loaded.
     
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    [userDefaults setObject:@(sender.indexOfSelectedItem) forKey:kMPUserDefaultsSelectedProjectKey];
+    [userDefaults synchronize];
 }
 
 - (IBAction)loadEventsButtonPressed:(id)sender {
     [self.progressIndicator startAnimation:sender];
     ExportRequest *request = [ExportRequest requestWithAPIKey:self.apiKey secret:self.apiSecret];
     [request requestForEvents:self.eventsArray fromDate:self.fromDatePicker.dateValue toDate:self.toDatePicker.dateValue where:[self.whereTextField stringValue]];
+    
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    [userDefaults setObject:[self.whereTextField stringValue] forKey:kMPUserDefaultsWhereClauseKey];
+    [userDefaults setObject:[self.eventsArray componentsJoinedByString:@", "] forKey:kMPUserDefaultsEventsKey];
+    [userDefaults setObject:self.fromDatePicker.dateValue forKey:kMPUserDefaultsFromDateKey];
+    [userDefaults setObject:self.toDatePicker.dateValue forKey:kMPUserDefaultsToDateKey];
+    [userDefaults synchronize];
 }
 - (IBAction)loadPeopleButtonPressed:(id)sender {
     [self.progressIndicator startAnimation:sender];
     ExportRequest *request = [ExportRequest requestWithAPIKey:self.apiKey secret:self.apiSecret];
     [request requestForPeopleWhere:[self.whereTextField stringValue] sessionID:@"" page:0];
+    
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    [userDefaults setObject:[self.whereTextField stringValue] forKey:kMPUserDefaultsWhereClauseKey];
+    [userDefaults synchronize];
 }
 - (IBAction)resetButtonPressed:(id)sender {
     [self.progressIndicator startAnimation:sender];
     
-    AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
-    __block CBLManager *manager = appDelegate.manager;
+    __block AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
     
-    dispatch_sync(manager.dispatchQueue, ^{
-        NSError *dbError;
-        CBLDatabase *database = [manager databaseNamed:kMPCBLDatabaseName error:&dbError];
-        if (!dbError)
+    dispatch_sync(appDelegate.manager.dispatchQueue, ^{
+        
+        CBLDatabase *database = appDelegate.database;
+        
+        NSError *deletionError;
+        [database deleteDatabase:&deletionError];
+        if (!deletionError)
         {
-            NSError *deletionError;
-            [database deleteDatabase:&deletionError];
-            if (!deletionError)
+            NSError *creationError;
+            [appDelegate.manager databaseNamed:kMPCBLDatabaseName error:&creationError];
+            if (!creationError)
             {
-                NSError *creationError;
-                [appDelegate.manager databaseNamed:kMPCBLDatabaseName error:&creationError];
-                if (!creationError)
-                {
-                    [appDelegate setupCouchbaseLite];
-                } else
-                {
-                    [self appendToStatusLog:[NSString stringWithFormat:@"Error creating new database. Error message: %@", creationError.localizedDescription]];
-                }
+                [appDelegate setupCouchbaseLite];
             } else
             {
-                [self appendToStatusLog:[NSString stringWithFormat:@"Error deleting database. Error message: %@", deletionError.localizedDescription]];
+                [self appendToStatusLog:[NSString stringWithFormat:@"Error creating new database. Error message: %@", creationError.localizedDescription]];
             }
         } else
         {
-            [self appendToStatusLog:[NSString stringWithFormat:@"Error getting database. Error message: %@",dbError.localizedDescription]];
+            [self appendToStatusLog:[NSString stringWithFormat:@"Error deleting database. Error message: %@", deletionError.localizedDescription]];
         }
         
     });
     
-    [self updateCountLabels];
+    [self updateCountLabelOfType:@"event" withCount:@0];
+    [self updateCountLabelOfType:@"people" withCount:@0];
     [self.progressIndicator stopAnimation:sender];
+}
+
+#pragma mark - NSNotification Methods
+
+- (void)registerForNotifications {
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveCSVNotification:) name:kMPCSVWritingBegan object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveCSVNotification:) name:kMPCSVWritingEnded object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveExportNotification:) name:kMPExportBegan object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveExportNotification:) name:kMPExportUpdate object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveExportNotification:) name:kMPExportEnd object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveStatusUpdate:) name:kMPStatusUpdate object:nil];
 }
 
 - (void)receiveExportNotification:(NSNotification *)notification
@@ -260,17 +181,6 @@
         {
             [self.progressIndicator stopAnimation:self];
         }
-    }
-}
-
-- (void)updateCountLabelOfType:(NSString *)type withCount:(NSNumber *)count
-{
-    if ([type isEqualToString:@"event"])
-    {
-        self.eventCountLabel.stringValue = [NSString stringWithFormat:@"%@ Events Loaded",count];
-    } else if ([type isEqualToString:@"people"])
-    {
-        self.peopleCountLabel.stringValue = [NSString stringWithFormat:@"%@ People Loaded", count];
     }
 }
 
@@ -295,6 +205,65 @@
     }
 }
 
+#pragma mark - Utility Methods
+
+- (void)restorePreviousSettings
+{
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    
+    NSNumber *selectedProjectIndex = [userDefaults objectForKey:kMPUserDefaultsSelectedProjectKey];
+    if (selectedProjectIndex) [self setSelectedProjectIndex:[selectedProjectIndex integerValue]];
+    
+    NSDate *fromDate = [userDefaults objectForKey:kMPUserDefaultsFromDateKey];
+    NSDate *toDate = [userDefaults objectForKey:kMPUserDefaultsToDateKey];
+
+    if (fromDate && toDate)
+    {
+        self.fromDatePicker.dateValue = fromDate;
+        self.toDatePicker.dateValue = toDate;
+    } else
+    {
+        [self resetDateRange];
+    }
+    
+    NSString *whereClause = [userDefaults objectForKey:kMPUserDefaultsWhereClauseKey];
+    if (whereClause) self.whereTextField.stringValue = whereClause;
+    
+    NSString *eventString = [userDefaults objectForKey:kMPUserDefaultsEventsKey];
+    if (eventString) self.eventsTextField.stringValue = eventString;
+}
+
+- (void)resetDateRange
+{
+    NSTimeInterval minusOneDay = -24*60*60;
+    NSTimeInterval minusThirtyDays = minusOneDay*30;
+    NSDate *yesterday = [[NSDate date] dateByAddingTimeInterval:minusOneDay];
+    NSDate *monthAgo = [[NSDate date] dateByAddingTimeInterval:minusThirtyDays];
+    self.fromDatePicker.dateValue = monthAgo;
+    self.toDatePicker.dateValue = yesterday;
+}
+
+- (void)setSelectedProjectIndex:(NSUInteger)index
+{
+    [self.projectPopUpButton selectItemAtIndex:index];
+}
+
+- (void)updateCountLabels {
+    self.eventCountLabel.stringValue = [NSString stringWithFormat:@"%@ Events Loaded", [self eventCount]];
+    self.peopleCountLabel.stringValue = [NSString stringWithFormat:@"%@ People Loaded", [self peopleCount]];
+}
+
+- (void)updateCountLabelOfType:(NSString *)type withCount:(NSNumber *)count
+{
+    if ([type isEqualToString:@"event"])
+    {
+        self.eventCountLabel.stringValue = [NSString stringWithFormat:@"%@ Events Loaded",count];
+    } else if ([type isEqualToString:@"people"])
+    {
+        self.peopleCountLabel.stringValue = [NSString stringWithFormat:@"%@ People Loaded", count];
+    }
+}
+
 - (void)appendToStatusLog:(NSString*)text
 {
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -304,4 +273,71 @@
         [self.statusLogTextView scrollRangeToVisible:NSMakeRange([[self.statusLogTextView string] length], 0)];
     });
 }
+
+- (NSNumber *)eventCount
+{
+    __block AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
+    __block NSNumber *eventCount;
+    
+    dispatch_sync(appDelegate.manager.dispatchQueue, ^{
+        
+        CBLDatabase *database = appDelegate.database;
+        
+        CBLView *eventView = [database viewNamed:kMPCBLViewNameEvents];
+        CBLQuery *eventQuery = [eventView createQuery];
+        NSError *eventError;
+        CBLQueryEnumerator *eventEnum = [eventQuery run:&eventError];
+        
+        if (eventError)
+        {
+            NSLog(@"Error querying events. Error messsage: %@",eventError.localizedDescription);
+            eventCount = @(-1);
+        } else
+        {
+            if ([eventEnum count])
+            {
+                eventCount = [[eventEnum rowAtIndex:0] value];
+            } else
+            {
+                eventCount = @0;
+            }
+        }
+    });
+    return eventCount;
+    
+}
+
+- (NSNumber *)peopleCount
+{
+    __block AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
+    __block NSNumber *peopleCount;
+    
+    dispatch_sync(appDelegate.manager.dispatchQueue, ^{
+        CBLDatabase *database = appDelegate.database;
+        
+        NSError *peopleError;
+        CBLView *peopleView = [database viewNamed:kMPCBLViewNamePeople];
+        CBLQuery *peopleQuery = [peopleView createQuery];
+        CBLQueryEnumerator *peopleEnum = [peopleQuery run:&peopleError];
+        if (peopleError)
+        {
+            NSLog(@"Error querying people. Error message: %@",peopleError.localizedDescription);
+            peopleCount = @(-1);
+        } else
+        {
+            if ([peopleEnum count])
+            {
+                peopleCount = [[peopleEnum rowAtIndex:0] value];
+            } else
+            {
+                peopleCount = @0;
+            }
+            
+        }
+        
+    });
+    
+    return peopleCount;
+}
+
 @end

@@ -17,11 +17,33 @@
 
 @implementation AppDelegate
 
+#pragma mark - App Life Cycle
+
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
-    // Insert code here to initialize your application
+    // Setup Database
     
     [self setupCouchbaseLite];
 }
+
+- (void)applicationWillTerminate:(NSNotification *)aNotification {
+    // Delete Database on Termination
+    
+    __block CBLDatabase *database = self.database;
+    
+    dispatch_sync(self.manager.dispatchQueue, ^{
+        NSError *deleteError;
+        
+        [database deleteDatabase:&deleteError];
+        if (deleteError)
+        {
+            NSLog(@"Error deleting database: %@", deleteError.localizedDescription);
+        }
+        
+    });
+}
+
+
+#pragma mark - CouchbaseLite Methods
 
 - (void)setupCouchbaseLite
 {
@@ -32,7 +54,6 @@
         [self updateStatusWithString:@"Cannot create instance of CBLManager"];
     } else
     {
-        [self updateStatusWithString:@"CBLManager created"];
         _manager.dispatchQueue = cblQueue;
         dispatch_sync(cblQueue, ^{
             [self createTheDatabase];
@@ -158,24 +179,25 @@
 
 }
 
+#pragma mark - Export Menu IBActions
+
 - (IBAction)exportEvents:(NSMenuItem *)sender {
-    NSSavePanel *savePanel = [NSSavePanel savePanel];
-    savePanel.canCreateDirectories = YES;
-    savePanel.delegate = self;
-    savePanel.allowedFileTypes = @[@"csv",@"CSV"];
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    savePanel.directoryURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@", paths[0]]];
+    NSSavePanel *savePanel = [self makeSavePanel];
     
     NSWindow *window = [NSApplication sharedApplication].windows[0];
     
     [savePanel beginSheetModalForWindow:window completionHandler:^(NSInteger result) {
         [savePanel orderOut:nil];
+        
         if (result == NSFileHandlingPanelOKButton)
         {
+            // Export->Events->Raw
             if (sender.tag == 0)
             {
                 CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
                 [parser eventsToCSVWithPeopleProperties:NO];
+            
+            // Export->Events->w/People Props
             } else if (sender.tag == 1)
             {
                 CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
@@ -187,17 +209,14 @@
 }
 
 - (IBAction)exportPeopleProfiles:(NSMenuItem *)sender {
-    NSSavePanel *savePanel = [NSSavePanel savePanel];
-    savePanel.canCreateDirectories = YES;
-    savePanel.delegate = self;
-    savePanel.allowedFileTypes = @[@"csv",@"CSV"];
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    savePanel.directoryURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@", paths[0]]];
+    NSSavePanel *savePanel = [self makeSavePanel];
     
     NSWindow *window = [NSApplication sharedApplication].windows[0];
     
     [savePanel beginSheetModalForWindow:window completionHandler:^(NSInteger result) {
         [savePanel orderOut:nil];
+        
+        // Export->People->Profiles
         if (result == NSFileHandlingPanelOKButton)
         {
             CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
@@ -207,17 +226,14 @@
 }
 
 - (IBAction)exportTransactions:(NSMenuItem *)sender {
-    NSSavePanel *savePanel = [NSSavePanel savePanel];
-    savePanel.canCreateDirectories = YES;
-    savePanel.delegate = self;
-    savePanel.allowedFileTypes = @[@"csv",@"CSV"];
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    savePanel.directoryURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@", paths[0]]];
+    NSSavePanel *savePanel = [self makeSavePanel];
     
     NSWindow *window = [NSApplication sharedApplication].windows[0];
     
     [savePanel beginSheetModalForWindow:window completionHandler:^(NSInteger result) {
         [savePanel orderOut:nil];
+        
+        // Export->People->Transactions
         if (result == NSFileHandlingPanelOKButton)
         {
             CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
@@ -227,17 +243,14 @@
 }
 
 - (IBAction)exportPeopleFromEvents:(NSMenuItem *)sender {
-    NSSavePanel *savePanel = [NSSavePanel savePanel];
-    savePanel.canCreateDirectories = YES;
-    savePanel.delegate = self;
-    savePanel.allowedFileTypes = @[@"csv",@"CSV"];
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    savePanel.directoryURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@", paths[0]]];
+    NSSavePanel *savePanel = [self makeSavePanel];
     
     NSWindow *window = [NSApplication sharedApplication].windows[0];
     
     [savePanel beginSheetModalForWindow:window completionHandler:^(NSInteger result) {
         [savePanel orderOut:nil];
+        
+        // Export->People->From Events
         if (result == NSFileHandlingPanelOKButton)
         {
             CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
@@ -246,32 +259,25 @@
     }];
 }
 
-- (void)applicationWillTerminate:(NSNotification *)aNotification {
-    // Insert code here to tear down your application
-    __block CBLManager *manager = self.manager;
-    
-    dispatch_sync(manager.dispatchQueue, ^{
-        NSError *dbError;
-        CBLDatabase *database = [manager databaseNamed:kMPCBLDatabaseName error:&dbError];
-        if (!dbError)
-        {
-            NSError *deleteError;
-            [database deleteDatabase:&deleteError];
-            if (deleteError)
-            {
-                NSLog(@"Error deleting database: %@", deleteError.localizedDescription);
-            }
-        } else
-        {
-            NSLog(@"Error getting database. Error message: %@", dbError.localizedDescription);
-        }
-    });
-}
+#pragma mark - Utility Methods
 
 - (void)updateStatusWithString:(NSString *)status
 {
     NSDictionary *statusInfo = @{kMPUserInfoKeyType:kMPStatusUpdate,kMPUserInfoKeyStatus:status};
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPStatusUpdate object:nil userInfo:statusInfo];
 }
+
+- (NSSavePanel *)makeSavePanel
+{
+    NSSavePanel *savePanel = [NSSavePanel savePanel];
+    savePanel.canCreateDirectories = YES;
+    savePanel.delegate = self;
+    savePanel.allowedFileTypes = @[@"csv",@"CSV"];
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    savePanel.directoryURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@", paths[0]]];
+    
+    return savePanel;
+}
+
 
 @end

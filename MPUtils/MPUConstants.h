@@ -51,6 +51,11 @@ extern NSString *const kMPUserDefaultsProjectAPISecretKey;
 extern NSString *const kMPUserDefaultsProjectTokenKey;
 extern NSString *const kMPUserDefaultsProjectNameKey;
 extern NSString *const kMPuserDefaultsUIProjectNamesKey;
+extern NSString *const kMPUserDefaultsSelectedProjectKey;
+extern NSString *const kMPUserDefaultsWhereClauseKey;
+extern NSString *const kMPUserDefaultsEventsKey;
+extern NSString *const kMPUserDefaultsFromDateKey;
+extern NSString *const kMPUserDefaultsToDateKey;
 
 #pragma mark - NSNotificationCenter
 

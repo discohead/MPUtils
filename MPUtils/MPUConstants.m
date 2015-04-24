@@ -51,6 +51,11 @@ NSString *const kMPUserDefaultsProjectAPISecretKey = @"apiSecret";
 NSString *const kMPUserDefaultsProjectTokenKey     = @"projectToken";
 NSString *const kMPUserDefaultsProjectNameKey      = @"projectName";
 NSString *const kMPuserDefaultsUIProjectNamesKey   = @"UIprojectNames";
+NSString *const kMPUserDefaultsSelectedProjectKey  = @"SelectedProjectKey";
+NSString *const kMPUserDefaultsWhereClauseKey      = @"WhereClauseKey";
+NSString *const kMPUserDefaultsEventsKey           = @"EventsKey";
+NSString *const kMPUserDefaultsFromDateKey         = @"FromDateKey";
+NSString *const kMPUserDefaultsToDateKey           = @"ToDateKey";
 
 #pragma mark - NSNotificationCenter
 

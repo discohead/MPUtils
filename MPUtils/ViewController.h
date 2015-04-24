@@ -10,7 +10,7 @@
 
 @interface ViewController : NSViewController
 
-
+- (void)setSelectedProjectIndex:(NSUInteger)index;
 
 @end
 

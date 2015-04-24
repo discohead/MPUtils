@@ -19,8 +19,6 @@
 @property (strong, nonatomic) NSString *apiSecret;
 @property (strong, nonatomic) NSDateFormatter *dateFormatter;
 @property (strong, nonatomic) NSNumber *totalProfiles;
-@property (strong, nonatomic) NSMutableSet *peoplePropsSet;
-@property (strong, nonatomic) NSMutableSet *transactionPropsSet;
 @property (strong, nonatomic) NSString *whereClause;
 @property (nonatomic) dispatch_queue_t downloadQueue;
 @property (strong, nonatomic) NSMutableArray *events;
@@ -31,6 +29,8 @@
 @end
 
 @implementation ExportRequest
+
+#pragma mark - Lazy Properties
 
 - (NSUInteger)eventCount
 {
@@ -108,32 +108,6 @@
     return _whereClause;
 }
 
--(NSMutableSet *)transactionPropsSet
-{
-    if (!_transactionPropsSet)
-    {
-        _transactionPropsSet = [NSMutableSet set];
-    }
-    return _transactionPropsSet;
-}
-
-- (NSMutableSet *)peoplePropsSet
-{
-    if (!_peoplePropsSet)
-    {
-        _peoplePropsSet = [NSMutableSet set];
-    }
-    return _peoplePropsSet;
-}
-
-+ (instancetype)requestWithAPIKey:(NSString *)apiKey secret:(NSString *)secret
-{
-    ExportRequest *exportRequest = [[ExportRequest alloc] init];
-    exportRequest.apiKey = apiKey;
-    exportRequest.apiSecret = secret;
-    return exportRequest;
-}
-
 - (NSDateFormatter *)dateFormatter
 {
     if (!_dateFormatter) {
@@ -143,41 +117,26 @@
     return _dateFormatter;
 }
 
-- (NSString *)expire
+
+#pragma mark - Convenience Initializer
+
++ (instancetype)requestWithAPIKey:(NSString *)apiKey secret:(NSString *)secret
 {
-    return [NSString stringWithFormat:@"%li", (long)[[NSDate date] timeIntervalSince1970] + 600];
+    ExportRequest *exportRequest = [[ExportRequest alloc] init];
+    exportRequest.apiKey = apiKey;
+    exportRequest.apiSecret = secret;
+    return exportRequest;
 }
 
-- (NSString *)signatureForParams:(NSMutableDictionary *)URLParams
-{
-    if (URLParams[@"sig"]) {
-        [URLParams removeObjectForKey:@"sig"];
-    }
-    NSArray *alphabeticalKeys = [URLParams.allKeys sortedArrayUsingSelector:@selector(compare:)];
-
-    NSString *hashString = [NSString string];
-    for (NSString *key in alphabeticalKeys) {
-        hashString = [hashString stringByAppendingString:[NSString stringWithFormat:@"%@=%@",key,URLParams[key]]];
-    }
-    hashString = [hashString stringByAppendingString:self.apiSecret];
-
-    return [hashString md5];
-}
+#pragma mark - Main Request Methods
 
 - (void)requestWithURL:(NSURL *)baseURL params:(NSDictionary *)URLParams
 {
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportBegan object:nil];
     
-    /* Configure session, choose between:
-     * defaultSessionConfiguration
-     * ephemeralSessionConfiguration
-     * backgroundSessionConfigurationWithIdentifier:
-     And set session-wide properties, such as: HTTPAdditionalHeaders,
-     HTTPCookieAcceptPolicy, requestCachePolicy or timeoutIntervalForRequest.
-     */
     NSURLSessionConfiguration* sessionConfig = [NSURLSessionConfiguration defaultSessionConfiguration];
     
-    /* Create session, and optionally set a NSURLSessionDelegate. */
+    /* Create session, and set a NSURLSessionDelegate. */
     NSURLSession* session = [NSURLSession sessionWithConfiguration:sessionConfig delegate:self delegateQueue:nil];
     
     // Update params with API Key, expire and sig
@@ -189,6 +148,7 @@
     
     /* Create the Request:
      Export (GET https://data.mixpanel.com/api/2.0/export/)
+     Engage (GET https://mixpanel.com/api/2.0/engage/)
      */
     
     NSURL *URL = NSURLByAppendingQueryParameters(baseURL, params);
@@ -204,7 +164,14 @@
     {
         task = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
             NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-            [self updateStatusWithString:[NSString stringWithFormat:@"HTTP Status Code = %lu", httpResponse.statusCode]];
+            if (httpResponse.statusCode == 200)
+            {
+                [self updateStatusWithString:[NSString stringWithFormat:@"HTTP Status Code = %lu", httpResponse.statusCode]];
+            } else
+            {
+                [self updateStatusWithString:[NSString stringWithFormat:@"BAD HTTP STATUS: %@", [httpResponse description]]];
+            }
+            
             
             if (error == nil) {
                 // Success
@@ -222,98 +189,6 @@
     }
     [task resume];
     
-}
-
-- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveData:(NSData *)data
-{
-    if ([self.requestType isEqualToString:@"events"])
-    {
-        switch ([self.jsonParser parse:data])
-        {
-            case SBJson4ParserStopped:
-            case SBJson4ParserComplete:
-                [self updateStatusWithString:[NSString stringWithFormat:@"%lu Events Parsed", self.events.count]];
-                break;
-            case SBJson4ParserWaitingForData:
-                [self updateStatusWithString:[NSString stringWithFormat:@"SBJSON4ParserWaitingForData, %lu events", self.events.count]];
-                break;
-            case SBJson4ParserError:
-                [self updateStatusWithString:@"SBJSON4ParserError!"];
-                break;
-            default:
-                break;
-        }
-        NSArray *eventBatch = [self.events copy];
-        self.eventCount += eventBatch.count;
-        [self.events removeObjectsInArray:eventBatch];
-        [self storeEvents:eventBatch];
-    }
-}
-
-- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveResponse:(NSURLResponse *)response completionHandler:(void (^)(NSURLSessionResponseDisposition))completionHandler
-{
-    NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-    [self updateStatusWithString:[NSString stringWithFormat:@"HTTP Status Code = %lu", httpResponse.statusCode]];
-    completionHandler(NSURLSessionResponseAllow);
-}
-
-- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error
-{
-    if (error)
-    {
-        [self updateStatusWithString:[NSString stringWithFormat:@"NSURLSessionTask Error: %@", error.localizedDescription]];
-    } else
-    {
-        [self updateStatusWithString:@"NSURLSessionTask Complete"];
-    }
-    [session invalidateAndCancel];
-    NSDictionary *userInfo = @{kMPUserInfoKeyCount:@(self.eventCount),kMPUserInfoKeyType:@"event"};
-    [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportEnd object:nil userInfo:userInfo];
-}
-
-- (void)storeEvents:(NSArray *)eventBatch
-{
-    AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
-    __block CBLManager *manager = appDelegate.manager;
-    __block CBLDatabase *database = appDelegate.database;
-    
-    dispatch_async(manager.dispatchQueue, ^{
-        NSError *dbError;
-        if (!dbError)
-        {
-            BOOL transaction = [database inTransaction:^BOOL{
-                for (NSDictionary *event in eventBatch)
-                {
-                    CBLDocument *document = [database createDocument];
-                    NSError *documentError;
-                    NSMutableDictionary *mutableEvent = [event mutableCopy];
-                    [mutableEvent setObject:kMPCBLDocumentTypeEvent forKey:kMPCBLDocumentKeyType];
-                    [document putProperties:mutableEvent error:&documentError];
-                    if (documentError)
-                    {
-                        [self updateStatusWithString:[NSString stringWithFormat:@"Error putting properties into document. Error Message: %@", documentError.localizedDescription]];
-                        return NO;
-                    }
-                }
-                return YES;
-            }];
-            if (transaction)
-            {
-                [self updateStatusWithString:[NSString stringWithFormat:@"Event Batch %lu saved successfully!", self.batchIndex]];
-                self.batchIndex++;
-                NSDictionary *userInfo = @{kMPUserInfoKeyCount:@(self.eventCount),kMPUserInfoKeyType:@"event"};
-                [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportEnd object:nil userInfo:userInfo];
-            } else
-            {
-                [self updateStatusWithString:[NSString stringWithFormat:@"Failed to save event batch %lu! Rolling back...", self.batchIndex]];
-                self.batchIndex++;
-            }
-        } else
-        {
-            [self updateStatusWithString:[NSString stringWithFormat:@"Error getting database. Error message: %@", dbError.localizedDescription]];
-        }
-        
-    });
 }
 
 - (void)requestForEvents:(NSArray *)events fromDate:(NSDate *)fromDate toDate:(NSDate *)toDate where:(NSString *)whereClause
@@ -349,82 +224,172 @@
     [self requestWithURL:[NSURL URLWithString:kMPURLEngageExport] params:@{kMPParameterEngageDistinctID:distinctID}];
 }
 
-- (void)eventsResultsHandler:(NSData *)data
+#pragma mark - NSURLSession Delegate
+
+// This is where we handle the raw events data as it streams in
+
+- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveData:(NSData *)data
 {
-    AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
-    __block CBLManager *manager = appDelegate.manager;
-    __block CBLDatabase *database = appDelegate.database;
-    
-    NSError *jsonError;
-    NSString *jsonString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-    
-    NSMutableArray *resultsArray = [[jsonString componentsSeparatedByString:@"\n"] mutableCopy];
-    [resultsArray removeObjectAtIndex:[resultsArray count]-1];
-    NSMutableArray *jsonArray = [NSMutableArray array];
-    int errorIndex = 0;
-    for (NSString *result in resultsArray) {
-        NSDictionary *jsonEvent = [NSJSONSerialization JSONObjectWithData:[result dataUsingEncoding:NSUTF8StringEncoding] options:0 error:&jsonError];
-        if (errorIndex < 2)
+    if ([self.requestType isEqualToString:@"events"])
+    {
+        // Check for API Error message on first pass
+        if (self.events.count == 0)
         {
-            if (jsonEvent[@"error"])
+            NSError *error;
+            NSDictionary *firstResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+            if (firstResponse[@"error"])
             {
-                [self updateStatusWithString:[NSString stringWithFormat:@"API Error Message: %@", jsonEvent[@"error"]]];
+                [self updateStatusWithString:[NSString stringWithFormat:@"API ERROR MESSAGE: %@", firstResponse[@"error"]]];
+                return;
             }
-            errorIndex++;
         }
-        [jsonArray addObject:jsonEvent];
         
-        if (jsonError) {
-            [self updateStatusWithString:[NSString stringWithFormat:@"Error serializing raw export JSON response: %@", jsonError.localizedDescription]];
+        // Parse current chunk of data
+        switch ([self.jsonParser parse:data])
+        {
+            case SBJson4ParserStopped:
+            case SBJson4ParserComplete:
+                [self updateStatusWithString:[NSString stringWithFormat:@"%lu Events Parsed", self.events.count]];
+                break;
+            case SBJson4ParserWaitingForData:
+                break;
+            case SBJson4ParserError:
+                return;
+            default:
+                break;
         }
+        
+        // Store current batch of elements and remove them from the self.events queue
+        NSArray *eventBatch = [self.events copy];
+        self.eventCount += eventBatch.count;
+        [self.events removeObjectsInArray:eventBatch];
+        [self storeEvents:eventBatch];
+    }
+}
+
+- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveResponse:(NSURLResponse *)response completionHandler:(void (^)(NSURLSessionResponseDisposition))completionHandler
+{
+    NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+    if (httpResponse.statusCode == 200)
+    {
+        [self updateStatusWithString:[NSString stringWithFormat:@"HTTP Status Code = %lu", httpResponse.statusCode]];
+    } else
+    {
+        [self updateStatusWithString:[NSString stringWithFormat:@"BAD HTTP STATUS: %@", [httpResponse description]]];
     }
     
-    dispatch_sync(manager.dispatchQueue, ^{
-        NSError *dbError;
-        
-        if (!dbError)
+    completionHandler(NSURLSessionResponseAllow);
+}
+
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error
+{
+    if (error)
+    {
+        [self updateStatusWithString:[NSString stringWithFormat:@"NSURLSessionTask Error: %@", error.localizedDescription]];
+    } else
+    {
+        [self updateStatusWithString:@"NSURLSessionTask Complete"];
+    }
+    [session invalidateAndCancel];
+    NSDictionary *userInfo = @{kMPUserInfoKeyCount:@(self.eventCount),kMPUserInfoKeyType:@"event"};
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportEnd object:nil userInfo:userInfo];
+}
+
+#pragma mark - People Results handler
+
+- (void)peopleResultsHandler:(NSData *)data
+{
+    NSError *peopleError;
+    __block NSDictionary *people = [NSDictionary dictionary];
+    people = [NSJSONSerialization JSONObjectWithData:data options:0 error:&peopleError];
+    
+    
+    if (!peopleError)
+    {
+        // If the API response object has an error key, update status and return
+        if (people[@"error"])
         {
-            BOOL transaction = [database inTransaction:^BOOL{
-                for (NSDictionary *event in jsonArray)
-                {
-                    CBLDocument *document = [database createDocument];
-                    NSError *documentError;
-                    NSMutableDictionary *mutableEvent = [event mutableCopy];
-                    [mutableEvent setObject:kMPCBLDocumentTypeEvent forKey:kMPCBLDocumentKeyType];
-                    [document putProperties:mutableEvent error:&documentError];
-                    if (documentError)
-                    {
-                        [self updateStatusWithString:[NSString stringWithFormat:@"Error putting properting into document. Error Message: %@", documentError.localizedDescription]];
-                        return NO;
-                    }
-                }
-                return YES;
-            }];
-            if (transaction)
-            {
-                [self updateStatusWithString:@"All events saved successfully!"];
-            } else
-            {
-                [self updateStatusWithString:@"Failed to save events! Rolling back..."];
-            }
-        } else
-        {
-            [self updateStatusWithString:[NSString stringWithFormat:@"Error getting database. Error message: %@", dbError.localizedDescription]];
+            [self updateStatusWithString:[NSString stringWithFormat:@"API Error message: %@",people[@"error"]]];
+            return;
         }
         
-    });
+        // Set total number of profiles to be returned on first pass
+        if ([self.totalProfiles integerValue] == 0)
+        {
+            self.totalProfiles = people[@"total"];
+        }
+        
+        // If the number of results is >= 1000 request the next page
+        if ([people[kMPPeopleKeyResults] count] >= 1000)
+        {
+            dispatch_async(self.downloadQueue, ^{
+                [self requestForPeopleWhere:self.whereClause sessionID:people[kMPPeopleKeySessionID] page:[people[kMPPeopleKeyPage] integerValue]+1];
+            });
+            
+            [self savePeopleToDatabase:people];
+        } else
+        {
+            // This is the last page of profiles
+            [self savePeopleToDatabase:people];
+            
+            // Post notification with new count
+            NSDictionary *userInfo = @{kMPUserInfoKeyCount:self.totalProfiles,kMPUserInfoKeyType:@"people"};
+            [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportEnd object:nil userInfo:userInfo];
+        }
+    } else
+    {
+        [self updateStatusWithString:[NSString stringWithFormat:@"Error serializing People data. Error message: %@",peopleError.localizedDescription]];
+    }
     
-    NSDictionary *userInfo = @{kMPUserInfoKeyCount:@([jsonArray count]),kMPUserInfoKeyType:@"event"};
-    [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportEnd object:nil userInfo:userInfo];
+}
+
+#pragma mark - Save to database
+
+- (void)storeEvents:(NSArray *)eventBatch
+{
+    AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
+    __block CBLDatabase *database = appDelegate.database;
+    
+    dispatch_async(appDelegate.manager.dispatchQueue, ^{
+        
+        BOOL transaction = [database inTransaction:^BOOL{
+            for (NSDictionary *event in eventBatch)
+            {
+                CBLDocument *document = [database createDocument];
+                NSError *documentError;
+                NSMutableDictionary *mutableEvent = [event mutableCopy];
+                [mutableEvent setObject:kMPCBLDocumentTypeEvent forKey:kMPCBLDocumentKeyType];
+                [document putProperties:mutableEvent error:&documentError];
+                if (documentError)
+                {
+                    [self updateStatusWithString:[NSString stringWithFormat:@"Error putting properties into document. Error Message: %@", documentError.localizedDescription]];
+                    return NO;
+                }
+            }
+            return YES;
+        }];
+        
+        if (transaction)
+        {
+            [self updateStatusWithString:[NSString stringWithFormat:@"Event Batch %lu saved successfully!", self.batchIndex]];
+            self.batchIndex++;
+            
+            // Post notification with new Event Count
+            NSDictionary *userInfo = @{kMPUserInfoKeyCount:@(self.eventCount),kMPUserInfoKeyType:@"event"};
+            [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportEnd object:nil userInfo:userInfo];
+        } else
+        {
+            [self updateStatusWithString:[NSString stringWithFormat:@"Failed to save event batch %lu! Rolling back...", self.batchIndex]];
+        }
+    });
 }
 
 - (void)savePeopleToDatabase:(NSDictionary *)people
 {
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
-    __block CBLManager *manager = appDelegate.manager;
     __block CBLDatabase *database = appDelegate.database;
     
-    dispatch_sync(manager.dispatchQueue, ^{
+    dispatch_sync(appDelegate.manager.dispatchQueue, ^{
         BOOL transaction = [database inTransaction:^BOOL{
             for (NSDictionary *profile in people[kMPPeopleKeyResults])
             {
@@ -443,64 +408,69 @@
             return YES;
         }];
         
-        if (!transaction)
-        {
-            [self updateStatusWithString:@"Failed to store People profiles. Rolling back..."];
-        } else
+        if (transaction)
         {
             NSNumber *page = people[kMPPeopleKeyPage];
             [self updateStatusWithString:[NSString stringWithFormat:@"Page %@ of %lu saved",page,[self.totalProfiles integerValue]/1000]];
+            
+            // Post notification with new People count
             NSDictionary *userInfo = @{kMPUserInfoKeyType:@"people",kMPUserInfoKeyCount:@([page integerValue] * 1000)};
             [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportUpdate object:nil userInfo:userInfo];
+            
+        } else
+        {
+            [self updateStatusWithString:@"Failed to store People profiles. Rolling back..."];
         }
     });
 }
 
-- (void)peopleResultsHandler:(NSData *)data
+#pragma mark - Utility Methods
+
+- (NSString *)signatureForParams:(NSMutableDictionary *)URLParams
 {
-    NSError *peopleError;
-    __block NSDictionary *people = [NSDictionary dictionary];
-    people = [NSJSONSerialization JSONObjectWithData:data options:0 error:&peopleError];
+    // Mixpanel API Signature Creator
     
-
-    if (!peopleError)
-    {
-        if (people[@"error"])
-        {
-           [self updateStatusWithString:[NSString stringWithFormat:@"Error message: %@",people[@"error"]]];
-            return;
-        }
-        if ([self.totalProfiles integerValue] == 0)
-        {
-            self.totalProfiles = people[@"total"];
-        }
-        if ([people[kMPPeopleKeyResults] count] >= 1000)
-        {
-            dispatch_async(self.downloadQueue, ^{
-                [self requestForPeopleWhere:self.whereClause sessionID:people[kMPPeopleKeySessionID] page:[people[kMPPeopleKeyPage] integerValue]+1];
-            });
-            
-            [self savePeopleToDatabase:people];
-        } else
-        {
-            [self savePeopleToDatabase:people];
-            NSDictionary *userInfo = @{kMPUserInfoKeyCount:self.totalProfiles,kMPUserInfoKeyType:@"people"};
-            [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportEnd object:nil userInfo:userInfo];
-        }
-    } else
-    {
-        [self updateStatusWithString:[NSString stringWithFormat:@"Error serializing People data. Error message: %@",peopleError.localizedDescription]];
+    if (URLParams[@"sig"]) {
+        [URLParams removeObjectForKey:@"sig"];
     }
-
+    NSArray *alphabeticalKeys = [URLParams.allKeys sortedArrayUsingSelector:@selector(compare:)];
+    
+    NSString *hashString = [NSString string];
+    for (NSString *key in alphabeticalKeys) {
+        hashString = [hashString stringByAppendingString:[NSString stringWithFormat:@"%@=%@",key,URLParams[key]]];
+    }
+    hashString = [hashString stringByAppendingString:self.apiSecret];
+    
+    return [hashString md5];
 }
 
-- (void)dataResultsHandler:(NSData *)data fromURL:(NSURL *)URL
+- (NSString *)expire
 {
-    NSLog(@"Data Results Hanlder Called!");
+    // Return timestamp of +10 mins
+    return [NSString stringWithFormat:@"%li", (long)[[NSDate date] timeIntervalSince1970] + 600];
+}
+
+
+- (NSString *)eventsStringFromArray:(NSArray *)events
+{
+    NSString *eventsString = @"[";
+    for (NSString *event in events) {
+        eventsString = [eventsString stringByAppendingString:[NSString stringWithFormat:@"\"%@\",",event]];
+    }
+    eventsString = [eventsString substringToIndex:eventsString.length-1];
+    eventsString = [eventsString stringByAppendingString:@"]"];
+    
+    return eventsString;
+}
+
+- (void)updateStatusWithString:(NSString *)status
+{
+    NSDictionary *statusInfo = @{kMPUserInfoKeyType:kMPStatusUpdate,kMPUserInfoKeyStatus:status};
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPStatusUpdate object:nil userInfo:statusInfo];
 }
 
 /*
- * Utils: Add this section before your class implementation
+ * Utils
  */
 
 /**
@@ -538,22 +508,4 @@ static NSURL* NSURLByAppendingQueryParameters(NSURL* URL, NSDictionary* queryPar
     return [NSURL URLWithString:URLString];
 }
 
-
-- (NSString *)eventsStringFromArray:(NSArray *)events
-{
-    NSString *eventsString = @"[";
-    for (NSString *event in events) {
-        eventsString = [eventsString stringByAppendingString:[NSString stringWithFormat:@"\"%@\",",event]];
-    }
-    eventsString = [eventsString substringToIndex:eventsString.length-1];
-    eventsString = [eventsString stringByAppendingString:@"]"];
-    
-    return eventsString;
-}
-
-- (void)updateStatusWithString:(NSString *)status
-{
-    NSDictionary *statusInfo = @{kMPUserInfoKeyType:kMPStatusUpdate,kMPUserInfoKeyStatus:status};
-    [[NSNotificationCenter defaultCenter] postNotificationName:kMPStatusUpdate object:nil userInfo:statusInfo];
-}
 @end

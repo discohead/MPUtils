@@ -95,5 +95,6 @@
     [updatedProjecs removeObjectAtIndex:self.projectPopUpButton.indexOfSelectedItem];
     [[NSUserDefaults standardUserDefaults] setObject:updatedProjecs forKey:kMPUserDefaultsProjectsKey];
     [[NSUserDefaults standardUserDefaults] synchronize];
+    [self updateTextFields];
 }
 @end

@@ -8,21 +8,16 @@
 
 #import "NewProjectViewController.h"
 #import "MPUConstants.h"
+#import "ViewController.h"
 
 @interface NewProjectViewController ()
 @property (weak) IBOutlet NSTextField *apiKeyTextField;
 @property (weak) IBOutlet NSTextField *apiSecretTextField;
 @property (weak) IBOutlet NSTextField *projectTokenTextField;
 @property (weak) IBOutlet NSTextField *projectNameTextField;
-
 @end
 
 @implementation NewProjectViewController
-
-- (void)viewDidLoad {
-    [super viewDidLoad];
-    // Do view setup here.
-}
 
 - (IBAction)saveButtonPressed:(id)sender
 {
@@ -62,8 +57,12 @@
         [userDefaults setObject:projectNames forKey:kMPuserDefaultsUIProjectNamesKey];
         [userDefaults synchronize];
         
-        NSWindow *window = [[NSApplication sharedApplication] keyWindow];
-        [window performClose:sender];
+        NSWindow *mainWindow = [NSApplication sharedApplication].windows[0];
+        ViewController *vc = (ViewController *)[mainWindow contentViewController];
+        [vc setSelectedProjectIndex:projects.count-1];
+        
+        NSWindow *kWindow = [[NSApplication sharedApplication] keyWindow];
+        [kWindow performClose:sender];
     }
     
 }
