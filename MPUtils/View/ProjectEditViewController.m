@@ -8,6 +8,7 @@
 
 #import "ProjectEditViewController.h"
 #import "MPUConstants.h"
+#import "ViewController.h"
 
 @interface ProjectEditViewController ()
 
@@ -96,5 +97,9 @@
     [[NSUserDefaults standardUserDefaults] setObject:updatedProjecs forKey:kMPUserDefaultsProjectsKey];
     [[NSUserDefaults standardUserDefaults] synchronize];
     [self updateTextFields];
+    
+    NSWindow *mainWindow = [NSApplication sharedApplication].windows[0];
+    ViewController *vc = (ViewController *)[mainWindow contentViewController];
+    [vc setSelectedProjectIndex:self.projectPopUpButton.indexOfSelectedItem];
 }
 @end

@@ -330,9 +330,9 @@
         } else
         {
             // This is the last page of profiles
-            [self savePeopleToDatabase:people];
+            [self savePeopleToDatabase:people]; 
             
-            // Post notification with new count
+            // Post notification with total count
             NSDictionary *userInfo = @{kMPUserInfoKeyCount:self.totalProfiles,kMPUserInfoKeyType:@"people"};
             [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportEnd object:nil userInfo:userInfo];
         }
@@ -340,6 +340,8 @@
     {
         [self updateStatusWithString:[NSString stringWithFormat:@"Error serializing People data. Error message: %@",peopleError.localizedDescription]];
     }
+    
+    
     
 }
 

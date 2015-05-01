@@ -146,11 +146,11 @@
     dispatch_async(appDelegate.manager.dispatchQueue, ^{
         
         // Get People property keys from database view and write header row
+        
         CBLView *peoplePropsView = [database viewNamed:kmPCBlViewNamePeopleProperties];
         CBLQuery *peoplePropsQuery = [peoplePropsView createQuery];
         NSError *peoplePropsError;
         CBLQueryEnumerator *peoplePropsEnum = [peoplePropsQuery run:&peoplePropsError];
-        
         NSMutableArray *propsArray = [NSMutableArray array];
         if (peoplePropsEnum.count)
         {
@@ -166,28 +166,35 @@
         CBLQuery *query = [peopleView createQuery];
         query.mapOnly = YES;
         CBLQueryEnumerator *queryEnumerator = [query run:&queryError];
+        NSUInteger count = queryEnumerator.count;
 
-        for (CBLQueryRow *peopleRow in queryEnumerator)
+        if (!queryError)
         {
-            CBLDocument *peopleDoc = peopleRow.document;
-            NSDictionary *peopleDocProps = peopleDoc.properties;
-            [self.writer writeField:peopleDocProps[kMPCBLPeopleDocumentKeyDistinctID]];
-            NSDictionary *peopleProps = peopleDocProps[kMPCBLPeopleDocumentKeyProperties];
-            
-            for (NSString *peopleProp in propsArray)
+            for (CBLQueryRow *peopleRow in queryEnumerator)
             {
-                if (peopleProps[peopleProp])
+                CBLDocument *peopleDoc = peopleRow.document;
+                NSDictionary *peopleDocProps = peopleDoc.properties;
+                [self.writer writeField:peopleDocProps[kMPCBLPeopleDocumentKeyDistinctID]];
+                NSDictionary *peopleProps = peopleDocProps[kMPCBLPeopleDocumentKeyProperties];
+                
+                for (NSString *peopleProp in propsArray)
                 {
-                    [self.writer writeField:peopleProps[peopleProp]];
-                } else
-                {
-                    [self.writer writeField:@""];
+                    if (peopleProps[peopleProp])
+                    {
+                        [self.writer writeField:peopleProps[peopleProp]];
+                    } else
+                    {
+                        [self.writer writeField:@""];
+                    }
                 }
+                [self.writer finishLine];
             }
-            [self.writer finishLine];
+        } else
+        {
+            [self updateStatusWithString:[NSString stringWithFormat:@"ERROR querying for People. Error message: %@", queryError.localizedDescription]];
         }
 
-        [self updateStatusWithString:[NSString stringWithFormat:@"%lu People profiles written to CSV", queryEnumerator.count]];
+        [self updateStatusWithString:[NSString stringWithFormat:@"%lu People profiles written to CSV", count]];
         [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil];
     });
     
@@ -293,20 +300,23 @@
                 CBLQueryRow *distinctIDs = [distinctIDEnum rowAtIndex:0];
                 for (NSString *distinctID in distinctIDs.value)
                 {
-                    [self.writer writeField:distinctID];
-                    CBLDocument *profileDoc = [database documentWithID:distinctID];
-                    NSDictionary *properties = profileDoc[kMPCBLPeopleDocumentKeyProperties];
-                    for (NSString *propKey in propsArray)
+                    CBLDocument *profileDoc = [database existingDocumentWithID:distinctID];
+                    if (profileDoc)
                     {
-                        if (properties[propKey])
+                        [self.writer writeField:distinctID];
+                        NSDictionary *properties = profileDoc[kMPCBLPeopleDocumentKeyProperties];
+                        for (NSString *propKey in propsArray)
                         {
-                            [self.writer writeField:properties[propKey]];
-                        } else
-                        {
-                            [self.writer writeField:@""];
+                            if (properties[propKey])
+                            {
+                                [self.writer writeField:properties[propKey]];
+                            } else
+                            {
+                                [self.writer writeField:@""];
+                            }
                         }
+                        [self.writer finishLine];
                     }
-                    [self.writer finishLine];
                 }
             }
         } else

@@ -10,6 +10,7 @@
 #import "MPUConstants.h"
 #import "CSVParser.h"
 #import "ViewController.h"
+#import <Mixpanel-OSX-Community/Mixpanel.h>
 
 @interface AppDelegate () <NSOpenSavePanelDelegate>
 

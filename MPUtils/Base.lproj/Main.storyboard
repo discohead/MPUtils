@@ -63,7 +63,7 @@
                                                 <segue destination="uos-hd-vfb" kind="modal" id="5cQ-BH-aE9"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem title="Delete Project" keyEquivalent="" id="IAo-SY-fd9">
+                                        <menuItem title="Edit Projects" keyEquivalent="p" id="IAo-SY-fd9">
                                             <connections>
                                                 <segue destination="Hfa-RB-KvN" kind="modal" id="Y4W-4m-wCq"/>
                                             </connections>
@@ -361,13 +361,13 @@
                                     </items>
                                 </menu>
                             </menuItem>
-                            <menuItem title="Help" id="wpr-3q-Mcd">
+                            <menuItem title="Help" id="CS9-e4-nMb">
                                 <modifierMask key="keyEquivalentModifierMask"/>
-                                <menu key="submenu" title="Help" systemMenu="help" id="F2S-fz-NVQ">
+                                <menu key="submenu" title="Help" systemMenu="help" id="zqR-GT-OtC">
                                     <items>
-                                        <menuItem title="MPUtils Help" keyEquivalent="?" id="FKE-Sm-Kum">
+                                        <menuItem title="Application Help" keyEquivalent="?" id="sBs-Er-dfJ">
                                             <connections>
-                                                <action selector="showHelp:" target="Ady-hI-5gd" id="y7X-2Q-9no"/>
+                                                <action selector="showHelp:" target="Ady-hI-5gd" id="wXh-AX-s6x"/>
                                             </connections>
                                         </menuItem>
                                     </items>
