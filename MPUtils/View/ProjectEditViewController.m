@@ -21,6 +21,7 @@
 @property (weak, nonatomic) NSDictionary *selectedProject;
 @property (strong, nonatomic) NSArrayController *projectsArrayController;
 
+
 @end
 
 @implementation ProjectEditViewController

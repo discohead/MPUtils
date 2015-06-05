@@ -10,15 +10,26 @@
 #import "CHCSVParser.h"
 #import "AppDelegate.h"
 #import "MPUConstants.h"
-#import <CouchbaseLite/CouchbaseLite.h>
+#import <YapDatabase/YapDatabase.h>
 
 @interface CSVParser ()
 
 @property (strong, nonatomic) CHCSVWriter *writer;
+@property (strong, nonatomic) YapDatabaseConnection *concurrentConnection;
 
 @end
 
 @implementation CSVParser
+
+- (YapDatabaseConnection *)concurrentConnection
+{
+    if (!_concurrentConnection)
+    {
+        AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
+        _concurrentConnection = [appDelegate.database newConnection];
+    }
+    return _concurrentConnection;
+}
 
 #pragma mark - Convenience Initializer
 
@@ -35,233 +46,187 @@
 - (void)eventsToCSVWithPeopleProperties:(BOOL)peopleProperties
 {
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingBegan object:nil];
+    __weak CSVParser *weakSelf = self;
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
-    __block CBLDatabase *database = appDelegate.database;
+    __block NSArray *eventProps = [NSArray array];
+    __block NSArray *peopleProps = [NSArray array];
+    NSMutableArray *headers = [NSMutableArray array];
     
-    dispatch_async(appDelegate.manager.dispatchQueue, ^{
+    [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
+        eventProps = [transaction objectForKey:kMPDBPropertiesKeyEvents inCollection:kMPDBCollectionNamePropertiesEvents];
+    }];
+    [headers addObjectsFromArray:eventProps];
+    
+    if (peopleProperties)
+    {
         
-        // Get all event property keys from database view
-        CBLView *eventPropsView = [database viewNamed:kMPCBLViewNameEventProperties];
-        CBLQuery *eventPropsQuery = [eventPropsView createQuery];
-        NSError *eventPropsError;
-        CBLQueryEnumerator *eventPropsEnum = [eventPropsQuery run:&eventPropsError];
-        NSMutableArray *eventPropsArray = [NSMutableArray array];
-        if ([eventPropsEnum count])
+        [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
+            peopleProps = [transaction objectForKey:kMPDBPropertiesKeyPeople inCollection:kMPDBCollectionNamePropertiesPeople];
+        }];
+        for (NSString *propName in peopleProps)
         {
-            eventPropsArray = [[[eventPropsEnum rowAtIndex:0] value] mutableCopy];
+            [headers addObject:[NSString stringWithFormat:@"profile_%@",propName]];
         }
-        
-        // Add "Event" as a key for CSV header
-        [eventPropsArray insertObject:kMPCBLEventDocumentKeyEvent atIndex:0];
-        
-        for (NSString *propKey in eventPropsArray)
-        {
-            [self.writer writeField:propKey];
-        }
-        
-        // Remove "Event" key
-        [eventPropsArray removeObjectAtIndex:0];
-        
-        NSArray *peoplePropsArray = [NSArray array];
-        
-        // If this request includes writing People Properties get those keys from the database view and add to header line
-        if (peopleProperties)
-        {
-            CBLView *peoplePropsView = [database viewNamed:kmPCBlViewNamePeopleProperties];
-            CBLQuery *peoplePropsQuery = [peoplePropsView createQuery];
-            NSError *peoplePropsError;
-            CBLQueryEnumerator *peoplePropsEnum = [peoplePropsQuery run:&peoplePropsError];
-            if (peoplePropsEnum.count)
-            {
-                peoplePropsArray = [[peoplePropsEnum rowAtIndex:0] value];
-                for (NSString *profileKey in peoplePropsArray)
-                {
-                    [self.writer writeField:[NSString stringWithFormat:@"profile_%@",profileKey]];
-                }
-            }
-        }
-        
-        [self.writer finishLine];
-        
-        // Get all events from database and write to CSV
-        CBLView *eventsView = [database viewNamed:kMPCBLViewNameEvents];
-        NSError *queryError;
-        CBLQuery *query = [eventsView createQuery];
-        query.mapOnly = YES;
-        CBLQueryEnumerator *queryEnumerator = [query run:&queryError];
-        for (CBLQueryRow *eventRow in queryEnumerator)
-        {
-            CBLDocument *eventDoc = eventRow.document;
-            NSDictionary *eventDocProps = eventDoc.properties;
-            [self.writer writeField:eventDocProps[kMPCBLEventDocumentKeyEvent]];
-            NSDictionary *eventProps = eventDocProps[kMPCBLEventDocumentKeyProperties];
+    }
+    
+    [self writeHeadersForType:@"events" withProperties:headers];
+    
+    [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
+        __weak YapDatabaseReadTransaction *weakTransaction = transaction;
+        [transaction enumerateKeysAndObjectsInCollection:kMPDBCollectionNameEvents usingBlock:^(NSString *key, id event, BOOL *stop) {
+            [weakSelf writeEvent:event withProperties:eventProps];
             
-            for (NSString *eventProp in eventPropsArray)
-            {
-                if (eventProps[eventProp])
-                {
-                    [self.writer writeField:eventProps[eventProp]];
-                } else
-                {
-                    [self.writer writeField:@""];
-                }
-            }
-            
-            // Write People properties too if requested
             if (peopleProperties)
             {
-                CBLDocument *peopleDoc = [database existingDocumentWithID:eventProps[@"distinct_id"]];
-                NSDictionary *peoplePropValues = [NSDictionary dictionary];
-                if (peopleDoc)
-                {
-                    peoplePropValues = peopleDoc.properties[kMPCBLPeopleDocumentKeyProperties];
-                }
-                
-                for (NSString *key in peoplePropsArray)
-                {
-                    if (peoplePropValues[key])
-                    {
-                        [self.writer writeField:peoplePropValues[key]];
-                    } else
-                    {
-                        [self.writer writeField:@""];
-                    }
-                }
+                [weakSelf writePeoplePropertiesForEvent:event withProperties:peopleProps usingTransaction:weakTransaction];
             }
-            [self.writer finishLine];
-        }
-        [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil];
-    });
+            
+            [weakSelf.writer finishLine];
+        }];
+    }];
     
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil];
 }
 
 
 - (void)peopleToCSV
 {
-    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingBegan
-                                                        object:nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingBegan object:nil];
+    __weak CSVParser *weakSelf = self;
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
-    __block CBLDatabase *database = appDelegate.database;
     
-    dispatch_async(appDelegate.manager.dispatchQueue, ^{
-        
-        // Get People property keys from database view and write header row
-        
-        CBLView *peoplePropsView = [database viewNamed:kmPCBlViewNamePeopleProperties];
-        CBLQuery *peoplePropsQuery = [peoplePropsView createQuery];
-        NSError *peoplePropsError;
-        CBLQueryEnumerator *peoplePropsEnum = [peoplePropsQuery run:&peoplePropsError];
-        NSMutableArray *propsArray = [NSMutableArray array];
-        if (peoplePropsEnum.count)
-        {
-            propsArray = [[[peoplePropsEnum rowAtIndex:0] value] mutableCopy];
-        }
-        [propsArray insertObject:kMPCBLPeopleDocumentKeyDistinctID atIndex:0];
-        [self.writer writeLineOfFields:propsArray];
-        [propsArray removeObjectAtIndex:0];
-        
-        // Get all People documents from database view and write to CSV
-        CBLView *peopleView = [database viewNamed:kMPCBLViewNamePeople];
-        NSError *queryError;
-        CBLQuery *query = [peopleView createQuery];
-        query.mapOnly = YES;
-        CBLQueryEnumerator *queryEnumerator = [query run:&queryError];
-        NSUInteger count = queryEnumerator.count;
+    __block NSArray *peopleProps = [NSArray array];
+    
+    [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
+        peopleProps = [transaction objectForKey:kMPDBPropertiesKeyPeople inCollection:kMPDBCollectionNamePropertiesPeople];
+    }];
+    
+    [self writeHeadersForType:@"people" withProperties:peopleProps];
+    
+    [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
+        [transaction enumerateKeysAndObjectsInCollection:kMPDBCollectionNamePeople usingBlock:^(NSString *key, id profile, BOOL *stop) {
+            [weakSelf writeProfile:profile withProperties:peopleProps];
+        }];
+    }];
+    
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil];
+    
+}
 
-        if (!queryError)
+- (void)writePeoplePropertiesForEvent:(NSDictionary *)event withProperties:(NSArray *)peopleProperties usingTransaction:(YapDatabaseReadTransaction *)transaction
+{
+    __weak CSVParser *weakSelf = self;
+    
+    if (event[@"properties"][@"distinct_id"])
+    {
+        if ([transaction hasObjectForKey:event[@"properties"][@"distinct_id"] inCollection:kMPDBCollectionNamePeople])
         {
-            for (CBLQueryRow *peopleRow in queryEnumerator)
+            NSDictionary *profile = [transaction objectForKey:event[@"properties"][@"distinct_id"] inCollection:kMPDBCollectionNamePeople];
+            
+            for (NSString *peopleProp in peopleProperties)
             {
-                CBLDocument *peopleDoc = peopleRow.document;
-                NSDictionary *peopleDocProps = peopleDoc.properties;
-                [self.writer writeField:peopleDocProps[kMPCBLPeopleDocumentKeyDistinctID]];
-                NSDictionary *peopleProps = peopleDocProps[kMPCBLPeopleDocumentKeyProperties];
-                
-                for (NSString *peopleProp in propsArray)
+                if (profile[@"$properties"][peopleProp])
                 {
-                    if (peopleProps[peopleProp])
-                    {
-                        [self.writer writeField:peopleProps[peopleProp]];
-                    } else
-                    {
-                        [self.writer writeField:@""];
-                    }
+                    [weakSelf.writer writeField:peopleProp];
+                } else
+                {
+                    [weakSelf.writer writeField:@""];
                 }
-                [self.writer finishLine];
             }
+        }
+    }
+}
+
+- (void)writeEvent:(NSDictionary *)event withProperties:(NSArray *)properties
+{
+    __weak CSVParser *weakSelf = self;
+    [weakSelf.writer writeField:event[@"event"]];
+    for (NSString *eventProp in properties)
+    {
+        if (event[@"properties"][eventProp])
+        {
+            [weakSelf.writer writeField:event[@"properties"][eventProp]];
         } else
         {
-            [self updateStatusWithString:[NSString stringWithFormat:@"ERROR querying for People. Error message: %@", queryError.localizedDescription]];
+            [weakSelf.writer writeField:@""];
         }
-
-        [self updateStatusWithString:[NSString stringWithFormat:@"%lu People profiles written to CSV", count]];
-        [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil];
-    });
+    }
     
+    // We do not finish line here, allowing the addition of People properties
+}
+
+- (void)writeHeadersForType:(NSString *)type withProperties:(NSArray *)properties
+{
+    NSString *firstHeader = [type isEqualToString:@"events"] ? @"event" : @"$distinct_id";
+    [self.writer writeField:firstHeader];
+    if ([type isEqualToString:@"transactions"])
+    {
+        [self.writer writeField:@"$amount"];
+        [self.writer writeField:@"$time"];
+    }
+    for (NSString *propName in properties)
+    {
+        [self.writer writeField:propName];
+    }
+    [self.writer finishLine];
+}
+
+- (void)writeProfile:(NSDictionary *)profile withProperties:(NSArray *)properties
+{
+    __weak CSVParser *weakSelf = self;
+    [weakSelf.writer writeField:profile[@"$distinct_id"]];
+    
+    for (NSString *peopleProp in properties)
+    {
+        if (profile[@"$properties"][peopleProp])
+        {
+            [weakSelf.writer writeField:profile[@"$properties"][peopleProp]];
+        } else
+        {
+            [weakSelf.writer writeField:@""];
+        }
+    }
+    
+    [weakSelf.writer finishLine];
 }
 - (void)transactionsToCSV
 {
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingBegan object:nil];
-    
+    __weak CSVParser *weakSelf = self;
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
-    __block CBLDatabase *database = appDelegate.database;
     
-    dispatch_async(appDelegate.manager.dispatchQueue, ^{
+    [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
         
-        // Get $transactions from database view and write keys to header row
-        CBLView *transactionView = [database viewNamed:kMPCBLViewNameTransactions];
-        NSError *keyQueryError;
-        CBLQuery *keyQuery = [transactionView createQuery];
-        CBLQueryEnumerator *keyQueryEnum = [keyQuery run:&keyQueryError];
+        NSArray *keys = [transaction objectForKey:kMPDBPropertiesKeyTransactions inCollection:kMPDBCollectionNamePropertiesTransactions];
+        [weakSelf writeHeadersForType:@"transactions" withProperties:keys];
         
-        NSMutableArray *transactionKeys = [NSMutableArray array];
-        
-        if (!keyQueryError)
-        {
-            if (keyQueryEnum.count)
+        [transaction enumerateKeysAndObjectsInCollection:kMPDBCollectionNamePeople usingBlock:^(NSString *key, id profile, BOOL *stop) {
+
+            if (profile[@"$properties"][@"$transactions"])
             {
-                transactionKeys = [[[keyQueryEnum rowAtIndex:0] value] mutableCopy];
-                [transactionKeys insertObject:kMPCBLPeopleDocumentKeyDistinctID atIndex:0];
-            }
-        } else
-        {
-            [self updateStatusWithString:[NSString stringWithFormat:@"Error querying transaction properties. Error message: %@", keyQueryError.localizedDescription]];
-        }
-        [self.writer writeLineOfFields:transactionKeys];
-        [transactionKeys removeObjectAtIndex:0];
-        
-        
-        // Switch off reduce function to query full transaction data
-        keyQuery.mapOnly = YES;
-        NSError *transactionQueryError;
-        CBLQueryEnumerator *transactionQueryEnum = [keyQuery run:&transactionQueryError];
-        if (!transactionQueryError)
-        {
-            for (CBLQueryRow *transactions in transactionQueryEnum)
-            {
-                for (NSDictionary *transaction in transactions.value)
+                NSDictionary *transactions = profile[@"$properties"][@"$transactions"];
+                for (NSDictionary *t in transactions)
                 {
-                    [self.writer writeField:transactions.key];
-                    for (NSString *propKey in transactionKeys)
+                    [weakSelf.writer writeField:profile[@"$distinct_id"]];
+                    [weakSelf.writer writeField:t[@"$amount"]];
+                    [weakSelf.writer writeField:t[@"$time"]];
+                    for (NSString *key in keys)
                     {
-                        if (transaction[propKey])
+                        if (t[key])
                         {
-                            [self.writer writeField:transaction[propKey]];
+                            [weakSelf.writer writeField:t[key]];
                         } else
                         {
-                            [self.writer writeField:@""];
+                            [weakSelf.writer writeField:@""];
                         }
                     }
-                    [self.writer finishLine];
+                    [weakSelf.writer finishLine];
                 }
             }
-        } else
-        {
-            [self updateStatusWithString:[NSString stringWithFormat:@"Error querying transactions. Error message: %@", transactionQueryError.localizedDescription]];
-        }
-
-        [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil];
-    });
+        }];
+    }];
+    
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil];
 }
 
 - (void)peopleFromEventsToCSV
@@ -269,63 +234,46 @@
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingBegan object:nil];
     
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
-    __block CBLDatabase *database = appDelegate.database;
+    __weak CSVParser *weakSelf = self;
+    __block NSMutableSet *distinctIDs = [NSMutableSet set];
+    __block NSArray *properties = [NSArray array];
     
-    dispatch_async(appDelegate.manager.dispatchQueue, ^{
-        
-        // Get all distinct_id's in event data from database view
-        CBLView *distinctIDView = [database viewNamed:kMPCBLViewNameEventDistinctIDs];
-        CBLQuery *distinctIDQuery = [distinctIDView createQuery];
-        NSError *queryError;
-        CBLQueryEnumerator *distinctIDEnum = [distinctIDQuery run:&queryError];
-        if (!queryError)
-        {
-            if (distinctIDEnum.count)
+    [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
+        [transaction enumerateKeysAndObjectsInCollection:kMPDBCollectionNameEvents usingBlock:^(NSString *key, id object, BOOL *stop) {
+            if (object[@"properties"][@"distinct_id"])
             {
-                // Get People property keys from database view and write to CSV header row
-                CBLView *peoplePropsView = [database viewNamed:kmPCBlViewNamePeopleProperties];
-                CBLQuery *peoplePropsQuery = [peoplePropsView createQuery];
-                NSError *peoplePropsError;
-                CBLQueryEnumerator *peoplePropsEnum = [peoplePropsQuery run:&peoplePropsError];
-                NSMutableArray *propsArray = [NSMutableArray array];
-                if (peoplePropsEnum.count)
+                [distinctIDs addObject:object[@"properties"][@"distinct_id"]];
+            }
+        }];
+    }];
+    
+    [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
+        properties = [transaction objectForKey:kMPDBPropertiesKeyPeople inCollection:kMPDBCollectionNamePropertiesPeople];
+    }];
+    
+    [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
+        for (NSString *distinctID in distinctIDs)
+        {
+            if ([transaction hasObjectForKey:distinctID inCollection:kMPDBCollectionNamePeople])
+            {
+                NSDictionary *profile = [transaction objectForKey:distinctID inCollection:kMPDBCollectionNamePeople];
+                [weakSelf.writer writeField:profile[@"$distinct_id"]];
+                for (NSString *prop in properties)
                 {
-                    propsArray = [[[peoplePropsEnum rowAtIndex:0] value] mutableCopy];
-                }
-                [propsArray insertObject:kMPCBLPeopleDocumentKeyDistinctID atIndex:0];
-                [self.writer writeLineOfFields:propsArray];
-                [propsArray removeObjectAtIndex:0];
-                
-                // Fetch the corresponding People document for each distinct_id and write to CSV
-                CBLQueryRow *distinctIDs = [distinctIDEnum rowAtIndex:0];
-                for (NSString *distinctID in distinctIDs.value)
-                {
-                    CBLDocument *profileDoc = [database existingDocumentWithID:distinctID];
-                    if (profileDoc)
+                    if (profile[@"$properties"][prop])
                     {
-                        [self.writer writeField:distinctID];
-                        NSDictionary *properties = profileDoc[kMPCBLPeopleDocumentKeyProperties];
-                        for (NSString *propKey in propsArray)
-                        {
-                            if (properties[propKey])
-                            {
-                                [self.writer writeField:properties[propKey]];
-                            } else
-                            {
-                                [self.writer writeField:@""];
-                            }
-                        }
-                        [self.writer finishLine];
+                        [weakSelf.writer writeField:profile[@"$properties"][prop]];
+                    } else
+                    {
+                        [weakSelf.writer writeField:@""];
                     }
                 }
             }
-        } else
-        {
-            [self updateStatusWithString:[NSString stringWithFormat:@"Error querying for distinct ID's from Events. Error message: %@",queryError.localizedDescription]];
+            [weakSelf.writer finishLine];
         }
-
-        [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil];
-    });
+    }];
+    
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil];
 }
 
 #pragma mark - Utility Methods

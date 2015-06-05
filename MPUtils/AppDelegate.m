@@ -10,175 +10,51 @@
 #import "MPUConstants.h"
 #import "CSVParser.h"
 #import "ViewController.h"
-#import <Mixpanel-OSX-Community/Mixpanel.h>
+#import <YapDatabase/YapDatabase.h>
 
 @interface AppDelegate () <NSOpenSavePanelDelegate>
+
+@property (strong, nonatomic) NSString *databasePath;
 
 @end
 
 @implementation AppDelegate
 
+- (NSString *)databasePath
+{
+    return [NSString stringWithFormat:@"%@/Library/Application Support/%@/YapDatabase/MPUtils.sqlite",NSHomeDirectory(),[[NSBundle mainBundle] bundleIdentifier]];
+}
+
+- (NSString *)filePath {
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentDirectory = [paths objectAtIndex:0];
+    return [documentDirectory stringByAppendingPathComponent:@"database.sqlite"];
+}
+
+- (YapDatabase *)sharedYapDatabase {
+    static YapDatabase *_sharedYapDatabase = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _sharedYapDatabase = [[YapDatabase alloc]initWithPath:[self filePath]];
+    });
+    
+    return _sharedYapDatabase;
+}
+
 #pragma mark - App Life Cycle
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
-    // Setup Database
-    
-    [self setupCouchbaseLite];
+    // Setup Database and connection
+    self.database = [self sharedYapDatabase];
+    [self updateStatusWithString:[NSString stringWithFormat:@"Database created at %@",self.databasePath]];
+    self.connection = [self.database newConnection];
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
     // Delete Database on Termination
-    
-    __block CBLDatabase *database = self.database;
-    
-    dispatch_sync(self.manager.dispatchQueue, ^{
-        NSError *deleteError;
-        
-        [database deleteDatabase:&deleteError];
-        if (deleteError)
-        {
-            NSLog(@"Error deleting database: %@", deleteError.localizedDescription);
-        }
-        
-    });
-}
-
-
-#pragma mark - CouchbaseLite Methods
-
-- (void)setupCouchbaseLite
-{
-    dispatch_queue_t cblQueue = dispatch_queue_create("cbl", NULL);
-    _manager = [[CBLManager alloc] init];
-    if (!_manager)
-    {
-        [self updateStatusWithString:@"Cannot create instance of CBLManager"];
-    } else
-    {
-        _manager.dispatchQueue = cblQueue;
-        dispatch_sync(cblQueue, ^{
-            [self createTheDatabase];
-        });
-    }
-    
-}
-
-- (BOOL)createTheDatabase {
-    
-    NSError *error;
-    
-    _database = [_manager databaseNamed:kMPCBLDatabaseName error:&error];
-    if (!_database)
-    {
-        [self updateStatusWithString:[NSString stringWithFormat:@"Cannot create database. Error message: %@", error.localizedDescription]];
-        return NO;
-    } else
-    {
-        [self createViews];
-    }
-    
-    NSString *databaseLocation = [NSString stringWithFormat:@"%@/Library/Application Support/%@/CouchbaseLite",NSHomeDirectory(),[[NSBundle mainBundle] bundleIdentifier]];
-    [self updateStatusWithString:[NSString stringWithFormat:@"Database %@ created at %@",kMPCBLDatabaseName, [NSString stringWithFormat:@"%@/%@%@",databaseLocation, kMPCBLDatabaseName, @".cblite2"]]];
-    
-    return YES;
-}
-
-- (void)createViews
-{
-    // Raw Events View w/ Count Reduce
-    CBLView *eventsView = [_database viewNamed:kMPCBLViewNameEvents];
-    [eventsView setMapBlock:^(NSDictionary *doc, CBLMapEmitBlock emit) {
-        if ([doc[kMPCBLDocumentKeyType] isEqualToString:kMPCBLDocumentTypeEvent])
-        {
-            emit(doc[kMPCBLDocumentKeyID], NULL);
-        }
-    } reduceBlock:^id(NSArray *keys, NSArray *values, BOOL rereduce) {
-        return @(values.count);
-    } version:@"3"];
-    
-    // Distinct ID's of Events view w/ Unique Reduce
-    CBLView *eventDistinctIDsView = [_database viewNamed:kMPCBLViewNameEventDistinctIDs];
-    [eventDistinctIDsView setMapBlock:^(NSDictionary *doc, CBLMapEmitBlock emit) {
-        if ([doc[kMPCBLDocumentKeyType] isEqualToString:kMPCBLDocumentTypeEvent])
-        {
-            emit(doc[kMPCBLEventDocumentKeyProperties][kMPCBLEventDocumentKeyDistinctID], NULL);
-        }
-    } reduceBlock:^id(NSArray *keys, NSArray *values, BOOL rereduce) {
-        NSMutableSet *distinctIDSet = [NSMutableSet set];
-        for (NSString *distinctID in keys)
-        {
-            [distinctIDSet addObject:distinctID];
-        }
-        return [distinctIDSet allObjects];
-    } version:@"1"];
-    
-    CBLView *eventPropertiesView = [_database viewNamed:kMPCBLViewNameEventProperties];
-    [eventPropertiesView setMapBlock:^(NSDictionary *doc, CBLMapEmitBlock emit) {
-        if ([doc[kMPCBLDocumentKeyType] isEqualToString:kMPCBLDocumentTypeEvent])
-        {
-            emit(doc[kMPCBLDocumentKeyID], doc[kMPCBLEventDocumentKeyProperties]);
-        }
-    } reduceBlock:^id(NSArray *keys, NSArray *values, BOOL rereduce) {
-        NSMutableSet *propKeys = [NSMutableSet set];
-        for (NSDictionary *props in values)
-        {
-            [propKeys addObjectsFromArray:props.allKeys];
-        }
-        return [propKeys allObjects];
-    } version:@"1"];
-    
-    // Raw People View w/ Count Reduce
-    CBLView *peopleView = [_database viewNamed:kMPCBLViewNamePeople];
-    [peopleView setMapBlock:^(NSDictionary *doc, CBLMapEmitBlock emit) {
-        if ([doc[kMPCBLDocumentKeyType] isEqualToString:kMPCBLDocumentTypePeopleProfile])
-        {
-            emit(doc[kMPCBLDocumentKeyID], NULL);
-        }
-    } reduceBlock:^id(NSArray *keys, NSArray *values, BOOL rereduce) {
-        return @(values.count);
-    } version:@"3"];
-    
-    // People property keys view
-    
-    CBLView *peoplPropertiesView = [_database viewNamed:kmPCBlViewNamePeopleProperties];
-    [peoplPropertiesView setMapBlock:^(NSDictionary *doc, CBLMapEmitBlock emit) {
-        if ([doc[kMPCBLDocumentKeyType] isEqualToString:kMPCBLDocumentTypePeopleProfile])
-        {
-            emit(doc[kMPCBLDocumentKeyID], doc[kMPCBLPeopleDocumentKeyProperties]);
-        }
-    } reduceBlock:^id(NSArray *keys, NSArray *values, BOOL rereduce) {
-        NSMutableSet *propKeys = [NSMutableSet set];
-        for (NSDictionary *props in values)
-        {
-            [propKeys addObjectsFromArray:props.allKeys];
-        }
-        return [propKeys allObjects];
-    } version:@"1"];
-    
-    // $transactions view w/ property keys reduce
-    CBLView *transactionsView = [_database viewNamed:kMPCBLViewNameTransactions];
-    [transactionsView setMapBlock:^(NSDictionary *doc, CBLMapEmitBlock emit) {
-        if ([doc[kMPCBLDocumentKeyType] isEqualToString:kMPCBLDocumentTypePeopleProfile])
-        {
-            if (doc[kMPCBLPeopleDocumentKeyProperties][kMPCBLPeopleDocumentKeyTransactions])
-            {
-                emit(doc[kMPCBLDocumentKeyID],doc[kMPCBLPeopleDocumentKeyProperties][kMPCBLPeopleDocumentKeyTransactions]);
-            }
-        }
-    } reduceBlock:^id(NSArray *keys, NSArray *values, BOOL rereduce) {
-        NSMutableSet *propKeySet = [NSMutableSet set];
-        for (NSArray *transactions in values)
-        {
-            for (NSDictionary *transaction in transactions)
-            {
-                [propKeySet addObjectsFromArray:transaction.allKeys];
-            }
-        }
-        return [propKeySet allObjects];
-    } version:@"2"];
-    
 
 }
+
 
 #pragma mark - Export Menu IBActions
 

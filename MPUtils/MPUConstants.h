@@ -107,5 +107,16 @@ extern NSString *const kMPCBLViewNameEventProperties;
 extern NSString *const kMPCBLViewNamePeopleCount;
 extern NSString *const kmPCBlViewNamePeopleProperties;
 
+#pragma mark - YapDatabase
+
+extern NSString *const kMPDBCollectionNameEvents;
+extern NSString *const kMPDBCollectionNamePeople;
+extern NSString *const kMPDBCollectionNamePropertiesPeople;
+extern NSString *const kMPDBCollectionNamePropertiesEvents;
+extern NSString *const kMPDBCollectionNamePropertiesTransactions;
+extern NSString *const kMPDBPropertiesKeyTransactions;
+extern NSString *const kMPDBPropertiesKeyPeople;
+extern NSString *const kMPDBPropertiesKeyEvents;
+
 @end
 

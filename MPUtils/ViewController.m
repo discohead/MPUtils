@@ -10,6 +10,7 @@
 #import "MPUConstants.h"
 #import "ExportRequest.h"
 #import "AppDelegate.h"
+#import <YapDatabase/YapDatabase.h>
 
 @interface ViewController ()
 
@@ -29,6 +30,7 @@
 @property (weak) IBOutlet NSTextField *eventCountLabel;
 @property (weak) IBOutlet NSTextField *peopleCountLabel;
 @property (unsafe_unretained) IBOutlet NSTextView *statusLogTextView;
+@property (weak) IBOutlet NSTableView *tableView;
 
 
 @end
@@ -57,12 +59,12 @@
 
 - (NSString *)apiKey
 {
-    return self.projects[self.projectPopUpButton.indexOfSelectedItem][kMPUserDefaultsProjectAPIKeyKey];
+    return self.projects[self.tableView.selectedRow][kMPUserDefaultsProjectAPIKeyKey];
 }
 
 - (NSString *)apiSecret
 {
-    return self.projects[self.projectPopUpButton.indexOfSelectedItem][kMPUserDefaultsProjectAPISecretKey];
+    return self.projects[self.tableView.selectedRow][kMPUserDefaultsProjectAPISecretKey];
 }
 
 - (NSArray *)projects
@@ -125,31 +127,13 @@
 - (IBAction)resetButtonPressed:(id)sender {
     [self.progressIndicator startAnimation:sender];
     
-    __block AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
+    AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
     
-    dispatch_sync(appDelegate.manager.dispatchQueue, ^{
-        
-        CBLDatabase *database = appDelegate.database;
-        
-        NSError *deletionError;
-        [database deleteDatabase:&deletionError];
-        if (!deletionError)
-        {
-            NSError *creationError;
-            [appDelegate.manager databaseNamed:kMPCBLDatabaseName error:&creationError];
-            if (!creationError)
-            {
-                [appDelegate setupCouchbaseLite];
-            } else
-            {
-                [self appendToStatusLog:[NSString stringWithFormat:@"Error creating new database. Error message: %@", creationError.localizedDescription]];
-            }
-        } else
-        {
-            [self appendToStatusLog:[NSString stringWithFormat:@"Error deleting database. Error message: %@", deletionError.localizedDescription]];
-        }
-        
-    });
+    [appDelegate.connection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+        [transaction removeAllObjectsInAllCollections];
+    }];
+    
+    [self appendToStatusLog:@"Database Reset!"];
     
     [self updateCountLabelOfType:@"event" withCount:@0];
     [self updateCountLabelOfType:@"people" withCount:@0];
@@ -211,8 +195,8 @@
 {
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     
-    NSNumber *selectedProjectIndex = [userDefaults objectForKey:kMPUserDefaultsSelectedProjectKey];
-    if (selectedProjectIndex) [self setSelectedProjectIndex:[selectedProjectIndex integerValue]];
+    //NSNumber *selectedProjectIndex = [userDefaults objectForKey:kMPUserDefaultsSelectedProjectKey];
+    //if (selectedProjectIndex) [self setSelectedProjectIndex:[selectedProjectIndex integerValue]];
     
     NSDate *fromDate = [userDefaults objectForKey:kMPUserDefaultsFromDateKey];
     NSDate *toDate = [userDefaults objectForKey:kMPUserDefaultsToDateKey];
@@ -243,14 +227,9 @@
     self.toDatePicker.dateValue = yesterday;
 }
 
-- (void)setSelectedProjectIndex:(NSUInteger)index
-{
-    [self.projectPopUpButton selectItemAtIndex:index];
-}
-
 - (void)updateCountLabels {
-    self.eventCountLabel.stringValue = [NSString stringWithFormat:@"%@ Events Loaded", [self eventCount]];
-    self.peopleCountLabel.stringValue = [NSString stringWithFormat:@"%@ People Loaded", [self peopleCount]];
+    self.eventCountLabel.stringValue = [NSString stringWithFormat:@"%lu Events Loaded", [self eventCount]];
+    self.peopleCountLabel.stringValue = [NSString stringWithFormat:@"%lu People Loaded", [self peopleCount]];
 }
 
 - (void)updateCountLabelOfType:(NSString *)type withCount:(NSNumber *)count
@@ -274,70 +253,28 @@
     });
 }
 
-- (NSNumber *)eventCount
+- (NSUInteger)eventCount
 {
-    __block AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
-    __block NSNumber *eventCount;
+    AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
+    __block NSUInteger count;
     
-    dispatch_sync(appDelegate.manager.dispatchQueue, ^{
-        
-        CBLDatabase *database = appDelegate.database;
-        
-        CBLView *eventView = [database viewNamed:kMPCBLViewNameEvents];
-        CBLQuery *eventQuery = [eventView createQuery];
-        NSError *eventError;
-        CBLQueryEnumerator *eventEnum = [eventQuery run:&eventError];
-        
-        if (eventError)
-        {
-            NSLog(@"Error querying events. Error messsage: %@",eventError.localizedDescription);
-            eventCount = @(-1);
-        } else
-        {
-            if ([eventEnum count])
-            {
-                eventCount = [[eventEnum rowAtIndex:0] value];
-            } else
-            {
-                eventCount = @0;
-            }
-        }
-    });
-    return eventCount;
+    [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
+        count = [transaction numberOfKeysInCollection:kMPDBCollectionNameEvents];
+    }];
     
+    return count;
 }
 
-- (NSNumber *)peopleCount
+- (NSUInteger)peopleCount
 {
-    __block AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
-    __block NSNumber *peopleCount;
+    AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
+    __block NSUInteger count;
     
-    dispatch_sync(appDelegate.manager.dispatchQueue, ^{
-        CBLDatabase *database = appDelegate.database;
-        
-        NSError *peopleError;
-        CBLView *peopleView = [database viewNamed:kMPCBLViewNamePeople];
-        CBLQuery *peopleQuery = [peopleView createQuery];
-        CBLQueryEnumerator *peopleEnum = [peopleQuery run:&peopleError];
-        if (peopleError)
-        {
-            NSLog(@"Error querying people. Error message: %@",peopleError.localizedDescription);
-            peopleCount = @(-1);
-        } else
-        {
-            if ([peopleEnum count])
-            {
-                peopleCount = [[peopleEnum rowAtIndex:0] value];
-            } else
-            {
-                peopleCount = @0;
-            }
-            
-        }
-        
-    });
+    [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
+        count = [transaction numberOfKeysInCollection:kMPDBCollectionNamePeople];
+    }];
     
-    return peopleCount;
+    return count;
 }
 
 @end

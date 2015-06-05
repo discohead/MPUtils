@@ -107,4 +107,16 @@ NSString *const kMPCBLViewNamePeopleCount           = @"peopleCountView";
 NSString *const kMPCBLViewNameEventDistinctIDs      = @"eventDistinctIDsView";
 NSString *const kmPCBlViewNamePeopleProperties      = @"peoplePropertiesView";
 
+#pragma mark - YapDatabase
+
+NSString *const kMPDBCollectionNameEvents                 = @"eventsCollection";
+NSString *const kMPDBCollectionNamePeople                 = @"peopleCollection";
+NSString *const kMPDBCollectionNamePropertiesPeople       = @"peoplePropertiesCollection";
+NSString *const kMPDBCollectionNamePropertiesEvents       = @"eventPropertiesCollection";
+NSString *const kMPDBCollectionNamePropertiesTransactions = @"transactionsPropertiesCollection";
+NSString *const kMPDBPropertiesKeyTransactions            = @"transactionPropertiesObjectKey";
+NSString *const kMPDBPropertiesKeyPeople                  = @"peoplePropertiesObjectKey";
+NSString *const kMPDBPropertiesKeyEvents                  = @"eventPropertiesObjectKey";
+
+
 @end

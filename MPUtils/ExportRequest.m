@@ -10,7 +10,7 @@
 #import "MPUConstants.h"
 #import "NSString+Hashes.h"
 #import "AppDelegate.h"
-#import <CouchbaseLite/CouchbaseLite.h>
+#import <YapDatabase/YapDatabase.h>
 #import <SBJson/SBJson4.h>
 
 @interface ExportRequest () <NSURLSessionDelegate, NSURLSessionTaskDelegate, NSURLSessionDataDelegate>
@@ -26,11 +26,34 @@
 @property (strong, nonatomic) NSString *requestType;
 @property (nonatomic) NSUInteger batchIndex;
 @property (nonatomic) NSUInteger eventCount;
+@property (strong, nonatomic) dispatch_queue_t propQueue;
+@property (strong, nonatomic) NSMutableSet *propertyKeys;
+@property (strong, nonatomic) NSMutableSet *transactionKeys;
+
 @end
 
 @implementation ExportRequest
 
 #pragma mark - Lazy Properties
+
+- (NSMutableSet *)propertyKeys
+{
+    if (!_propertyKeys)
+    {
+        _propertyKeys = [NSMutableSet set];
+    }
+    return _propertyKeys;
+}
+
+- (dispatch_queue_t)propQueue
+{
+    if (!_propQueue)
+    {
+        _propQueue = dispatch_queue_create("propertyThread", NULL);
+    }
+    
+    return _propQueue;
+}
 
 - (NSUInteger)eventCount
 {
@@ -283,12 +306,20 @@
 
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error
 {
+    
     if (error)
     {
         [self updateStatusWithString:[NSString stringWithFormat:@"NSURLSessionTask Error: %@", error.localizedDescription]];
     } else
     {
         [self updateStatusWithString:@"NSURLSessionTask Complete"];
+        //
+        dispatch_sync(self.propQueue, ^{});
+        __weak ExportRequest *weakSelf = self;
+        AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
+        [appDelegate.connection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+            [transaction setObject:[weakSelf.propertyKeys allObjects] forKey:kMPDBPropertiesKeyEvents inCollection:kMPDBCollectionNamePropertiesEvents];
+        }];
     }
     [session invalidateAndCancel];
     NSDictionary *userInfo = @{kMPUserInfoKeyCount:@(self.eventCount),kMPUserInfoKeyType:@"event"};
@@ -326,15 +357,11 @@
                 [self requestForPeopleWhere:self.whereClause sessionID:people[kMPPeopleKeySessionID] page:[people[kMPPeopleKeyPage] integerValue]+1];
             });
             
-            [self savePeopleToDatabase:people];
+            [self savePeopleToDatabase:people lastBatch:NO];
         } else
         {
             // This is the last page of profiles
-            [self savePeopleToDatabase:people]; 
-            
-            // Post notification with total count
-            NSDictionary *userInfo = @{kMPUserInfoKeyCount:self.totalProfiles,kMPUserInfoKeyType:@"people"};
-            [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportEnd object:nil userInfo:userInfo];
+            [self savePeopleToDatabase:people lastBatch:YES];
         }
     } else
     {
@@ -349,83 +376,79 @@
 
 - (void)storeEvents:(NSArray *)eventBatch
 {
+    __weak ExportRequest *weakSelf = self;
+    __block dispatch_queue_t propertyQueue = dispatch_queue_create("propertyThread", NULL);
+
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
-    __block CBLDatabase *database = appDelegate.database;
-    
-    dispatch_async(appDelegate.manager.dispatchQueue, ^{
-        
-        BOOL transaction = [database inTransaction:^BOOL{
-            for (NSDictionary *event in eventBatch)
-            {
-                CBLDocument *document = [database createDocument];
-                NSError *documentError;
-                NSMutableDictionary *mutableEvent = [event mutableCopy];
-                [mutableEvent setObject:kMPCBLDocumentTypeEvent forKey:kMPCBLDocumentKeyType];
-                [document putProperties:mutableEvent error:&documentError];
-                if (documentError)
-                {
-                    [self updateStatusWithString:[NSString stringWithFormat:@"Error putting properties into document. Error Message: %@", documentError.localizedDescription]];
-                    return NO;
-                }
-            }
-            return YES;
-        }];
-        
-        if (transaction)
+    [appDelegate.connection asyncReadWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+        for (NSDictionary *event in eventBatch)
         {
-            [self updateStatusWithString:[NSString stringWithFormat:@"Event Batch %lu saved successfully!", self.batchIndex]];
-            self.batchIndex++;
+            dispatch_async(propertyQueue, ^{
+                [weakSelf.propertyKeys addObjectsFromArray:[event[@"properties"] allKeys]];
+            });
             
-            // Post notification with new Event Count
-            NSDictionary *userInfo = @{kMPUserInfoKeyCount:@(self.eventCount),kMPUserInfoKeyType:@"event"};
-            [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportEnd object:nil userInfo:userInfo];
-        } else
-        {
-            [self updateStatusWithString:[NSString stringWithFormat:@"Failed to save event batch %lu! Rolling back...", self.batchIndex]];
+            [transaction setObject:event forKey:[[NSUUID UUID] UUIDString] inCollection:kMPDBCollectionNameEvents];
         }
-    });
+    } completionBlock:^{
+        [weakSelf updateStatusWithString:[NSString stringWithFormat:@"Event Batch %lu saved successfully!", self.batchIndex]];
+        weakSelf.batchIndex++;
+        
+        // Post notification with new Event Count
+        NSDictionary *userInfo = @{kMPUserInfoKeyCount:@(weakSelf.eventCount),kMPUserInfoKeyType:@"event"};
+        [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportEnd object:nil userInfo:userInfo];
+    }];
 }
 
-- (void)savePeopleToDatabase:(NSDictionary *)people
+- (void)savePeopleToDatabase:(NSDictionary *)people lastBatch:(BOOL)lastBatch
 {
+    __weak ExportRequest *weakSelf = self;
+    __block dispatch_queue_t propertyQueue = dispatch_queue_create("propertyThread", NULL);
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
-    __block CBLDatabase *database = appDelegate.database;
-    
-    dispatch_sync(appDelegate.manager.dispatchQueue, ^{
-        BOOL transaction = [database inTransaction:^BOOL{
-            for (NSDictionary *profile in people[kMPPeopleKeyResults])
-            {
-                CBLDocument *document = [database documentWithID:profile[kMPCBLPeopleDocumentKeyDistinctID]];
-                CBLUnsavedRevision *revision = [document newRevision];
-                NSError *documentError;
-                NSMutableDictionary *mutableProfile = [profile mutableCopy];
-                [mutableProfile setObject:kMPCBLDocumentTypePeopleProfile forKey:kMPCBLDocumentKeyType];
-                [revision.properties addEntriesFromDictionary:mutableProfile];
-                if (![revision save:&documentError])
+    [appDelegate.connection asyncReadWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+        for (NSDictionary *profile in people[kMPPeopleKeyResults])
+        {
+            dispatch_async(propertyQueue, ^{
+                NSArray *keys = [profile[@"$properties"] allKeys];
+                [weakSelf.propertyKeys addObjectsFromArray:keys];
+                if ([keys containsObject:@"$transactions"])
                 {
-                    [self updateStatusWithString:[NSString stringWithFormat:@"Error saving profile revision. Error Message: %@", documentError.localizedDescription]];
-                    return NO;
+                    [weakSelf getTransactionKeysForProfile:profile];
                 }
-            }
-            return YES;
-        }];
-        
-        if (transaction)
-        {
-            NSNumber *page = people[kMPPeopleKeyPage];
-            [self updateStatusWithString:[NSString stringWithFormat:@"Page %@ of %lu saved",page,[self.totalProfiles integerValue]/1000]];
-            
-            // Post notification with new People count
-            NSDictionary *userInfo = @{kMPUserInfoKeyType:@"people",kMPUserInfoKeyCount:@([page integerValue] * 1000)};
-            [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportUpdate object:nil userInfo:userInfo];
-            
-        } else
-        {
-            [self updateStatusWithString:@"Failed to store People profiles. Rolling back..."];
+            });
+            [transaction setObject:profile forKey:profile[@"$distinct_id"] inCollection:kMPDBCollectionNamePeople];
         }
-    });
+    } completionBlock:^{
+        NSNumber *page = people[kMPPeopleKeyPage];
+        [weakSelf updateStatusWithString:[NSString stringWithFormat:@"Page %@ of %lu saved",page,[weakSelf.totalProfiles integerValue]/1000]];
+        
+        // Post notification with new People count
+        NSDictionary *userInfo = @{kMPUserInfoKeyType:@"people",kMPUserInfoKeyCount:@([page integerValue] * 1000)};
+        [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportUpdate object:nil userInfo:userInfo];
+        
+        if (lastBatch)
+        {
+            // Ensure queue is empty by submitting empty synchronous block
+            dispatch_sync(propertyQueue, ^{});
+            
+            [appDelegate.connection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+                [transaction setObject:[weakSelf.propertyKeys allObjects] forKey:kMPDBPropertiesKeyPeople inCollection:kMPDBCollectionNamePropertiesPeople];
+                [transaction setObject:[weakSelf.transactionKeys allObjects] forKey:kMPDBPropertiesKeyTransactions inCollection:kMPDBCollectionNamePropertiesTransactions];
+            }];
+            
+            // Post notification with total count
+            NSDictionary *userInfo = @{kMPUserInfoKeyCount:self.totalProfiles,kMPUserInfoKeyType:@"people"};
+            [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportEnd object:nil userInfo:userInfo];
+        }
+    }];
 }
 
+- (void)getTransactionKeysForProfile:(NSDictionary *)profile
+{
+    for (NSDictionary *transaction in profile[@"$properties"][@"$transactions"])
+    {
+        [self.transactionKeys addObjectsFromArray:[transaction[@"$properties"] allKeys]];
+    }
+}
 #pragma mark - Utility Methods
 
 - (NSString *)signatureForParams:(NSMutableDictionary *)URLParams

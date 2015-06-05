@@ -7,13 +7,13 @@
 //
 
 #import <Cocoa/Cocoa.h>
-#import <CouchbaseLite/CouchbaseLite.h>
+
+@class YapDatabase, YapDatabaseConnection;
 
 @interface AppDelegate : NSObject <NSApplicationDelegate>
 
-@property (strong, nonatomic) CBLManager *manager;
-@property (strong, nonatomic) CBLDatabase *database;
+@property (strong, nonatomic) YapDatabase *database;
+@property (strong, nonatomic) YapDatabaseConnection *connection;
 
-- (void)setupCouchbaseLite;
 @end
 
