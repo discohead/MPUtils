@@ -17,11 +17,6 @@
 		7F30AC161AC7FBF700F85184 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7F30AC151AC7FBF700F85184 /* Images.xcassets */; };
 		7F30AC191AC7FBF800F85184 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7F30AC171AC7FBF800F85184 /* Main.storyboard */; };
 		7F30AC251AC7FBF800F85184 /* MPUtilsTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC241AC7FBF800F85184 /* MPUtilsTests.m */; };
-		7F30AC351AC7FC2800F85184 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC341AC7FC2800F85184 /* CFNetwork.framework */; };
-		7F30AC371AC7FC2E00F85184 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC361AC7FC2E00F85184 /* Security.framework */; };
-		7F30AC391AC7FC4000F85184 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC381AC7FC4000F85184 /* SystemConfiguration.framework */; };
-		7F30AC3B1AC7FC4A00F85184 /* libsqlite3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC3A1AC7FC4A00F85184 /* libsqlite3.dylib */; };
-		7F30AC3D1AC7FC5400F85184 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC3C1AC7FC5400F85184 /* libz.dylib */; };
 		7F30AC481AC7FCC300F85184 /* CHCSVParser.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC471AC7FCC300F85184 /* CHCSVParser.m */; };
 		7F30AC551AC7FD1700F85184 /* ExportRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC541AC7FD1700F85184 /* ExportRequest.m */; };
 		7F30AC581AC7FE6E00F85184 /* MPUConstants.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC571AC7FE6E00F85184 /* MPUConstants.m */; };
@@ -76,11 +71,6 @@
 		7F30AC1E1AC7FBF800F85184 /* MPUtilsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MPUtilsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7F30AC231AC7FBF800F85184 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		7F30AC241AC7FBF800F85184 /* MPUtilsTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MPUtilsTests.m; sourceTree = "<group>"; };
-		7F30AC341AC7FC2800F85184 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
-		7F30AC361AC7FC2E00F85184 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
-		7F30AC381AC7FC4000F85184 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
-		7F30AC3A1AC7FC4A00F85184 /* libsqlite3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsqlite3.dylib; path = usr/lib/libsqlite3.dylib; sourceTree = SDKROOT; };
-		7F30AC3C1AC7FC5400F85184 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		7F30AC461AC7FCC300F85184 /* CHCSVParser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CHCSVParser.h; path = CHCSVParser/CHCSVParser.h; sourceTree = "<group>"; };
 		7F30AC471AC7FCC300F85184 /* CHCSVParser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CHCSVParser.m; path = CHCSVParser/CHCSVParser.m; sourceTree = "<group>"; };
 		7F30AC531AC7FD1700F85184 /* ExportRequest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ExportRequest.h; sourceTree = "<group>"; };
@@ -104,11 +94,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7F30AC3D1AC7FC5400F85184 /* libz.dylib in Frameworks */,
-				7F30AC3B1AC7FC4A00F85184 /* libsqlite3.dylib in Frameworks */,
-				7F30AC391AC7FC4000F85184 /* SystemConfiguration.framework in Frameworks */,
-				7F30AC371AC7FC2E00F85184 /* Security.framework in Frameworks */,
-				7F30AC351AC7FC2800F85184 /* CFNetwork.framework in Frameworks */,
 				C9A3A1D447FF071B1253AD8A /* libPods.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -208,11 +193,6 @@
 		7F30AC2E1AC7FC1600F85184 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				7F30AC3C1AC7FC5400F85184 /* libz.dylib */,
-				7F30AC3A1AC7FC4A00F85184 /* libsqlite3.dylib */,
-				7F30AC381AC7FC4000F85184 /* SystemConfiguration.framework */,
-				7F30AC361AC7FC2E00F85184 /* Security.framework */,
-				7F30AC341AC7FC2800F85184 /* CFNetwork.framework */,
 				2520AD2E8E9D3B7257C95380 /* libPods.a */,
 			);
 			path = Frameworks;
