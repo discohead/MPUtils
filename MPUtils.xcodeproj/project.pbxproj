@@ -316,6 +316,7 @@
 				TargetAttributes = {
 					7F30AC071AC7FBF700F85184 = {
 						CreatedOnToolsVersion = 6.1.1;
+						DevelopmentTeam = P63LP2LEL5;
 					};
 					7F30AC1D1AC7FBF800F85184 = {
 						CreatedOnToolsVersion = 6.1.1;
@@ -528,6 +529,7 @@
 			baseConfigurationReference = C40F948E161298748CCD40DE /* Pods.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -557,6 +559,7 @@
 			baseConfigurationReference = C5DF7360311B9FAEEFD7DED7 /* Pods.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",

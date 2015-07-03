@@ -14,6 +14,6 @@
 - (void)requestWithURL:(NSURL *)baseURL params:(NSDictionary *)URLParams;
 - (void)requestForEvents:(NSArray *)events fromDate:(NSDate *)fromDate toDate:(NSDate *)toDate where:(NSString *)whereClause;
 - (void)requestForPeopleWhere:(NSString *)whereClause sessionID:(NSString *)sessionID page:(NSUInteger)page;
-
+- (void)cancel;
 
 @end

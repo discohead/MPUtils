@@ -12,6 +12,7 @@
 #import "AppDelegate.h"
 #import <YapDatabase/YapDatabase.h>
 #import <SBJson/SBJson4.h>
+#import <Mixpanel-OSX-Community/Mixpanel.h>
 
 @interface ExportRequest () <NSURLSessionDelegate, NSURLSessionTaskDelegate, NSURLSessionDataDelegate>
 
@@ -29,12 +30,23 @@
 @property (strong, nonatomic) dispatch_queue_t propQueue;
 @property (strong, nonatomic) NSMutableSet *propertyKeys;
 @property (strong, nonatomic) NSMutableSet *transactionKeys;
+@property (weak, nonatomic) NSURLSession *session;
+@property (nonatomic) NSTimeInterval startTime;
 
 @end
 
 @implementation ExportRequest
 
 #pragma mark - Lazy Properties
+
+- (NSTimeInterval)startTime
+{
+    if (!_startTime)
+    {
+        _startTime = [[NSDate date] timeIntervalSince1970];
+    }
+    return _startTime;
+}
 
 - (NSMutableSet *)propertyKeys
 {
@@ -98,7 +110,7 @@
         _jsonParser = [SBJson4Parser multiRootParserWithBlock:^(id item, BOOL *stop) {
             [self.events addObject:item];
         } errorHandler:^(NSError *error) {
-            [self updateStatusWithString:[NSString stringWithFormat:@"SBJson4Parser error: %@", error.localizedDescription]];
+            [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"SBJson4Parser error: %@", error.localizedDescription] attributes:@{NSForegroundColorAttributeName:[NSColor redColor]}]];
         }];
     }
     return _jsonParser;
@@ -148,6 +160,7 @@
     ExportRequest *exportRequest = [[ExportRequest alloc] init];
     exportRequest.apiKey = apiKey;
     exportRequest.apiSecret = secret;
+    exportRequest.startTime = [[NSDate date] timeIntervalSince1970];
     return exportRequest;
 }
 
@@ -161,6 +174,7 @@
     
     /* Create session, and set a NSURLSessionDelegate. */
     NSURLSession* session = [NSURLSession sessionWithConfiguration:sessionConfig delegate:self delegateQueue:nil];
+    self.session = session;
     
     // Update params with API Key, expire and sig
     NSMutableDictionary *params = [URLParams mutableCopy];
@@ -175,7 +189,7 @@
      */
     
     NSURL *URL = NSURLByAppendingQueryParameters(baseURL, params);
-    [self updateStatusWithString:URL.absoluteString];
+    [self updateStatusWithString:[[NSAttributedString alloc] initWithString:URL.absoluteString attributes:@{NSForegroundColorAttributeName:[NSColor blueColor]}]];
     
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:URL];
     request.HTTPMethod = @"GET";
@@ -185,14 +199,15 @@
     
     if ([self.requestType isEqualToString:@"people"])
     {
+        
         task = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
             NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
             if (httpResponse.statusCode == 200)
             {
-                [self updateStatusWithString:[NSString stringWithFormat:@"HTTP Status Code = %lu", httpResponse.statusCode]];
+                [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"HTTP Status Code = %lu", httpResponse.statusCode] attributes:@{NSForegroundColorAttributeName:[NSColor greenColor]}]];
             } else
             {
-                [self updateStatusWithString:[NSString stringWithFormat:@"BAD HTTP STATUS: %@", [httpResponse description]]];
+                [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"BAD HTTP STATUS: %@", [httpResponse description]] attributes:@{NSForegroundColorAttributeName:[NSColor redColor]}]];
             }
             
             
@@ -202,7 +217,8 @@
             }
             else {
                 // Failure
-                [self updateStatusWithString:[NSString stringWithFormat:@"URL Session Task Failed: %@", [error localizedDescription]]];
+                [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"URL Session Task Failed: %@", [error localizedDescription]] attributes:@{NSForegroundColorAttributeName:[NSColor redColor]}]];
+                [[Mixpanel sharedInstance] track:@"Engage URL Session Task Error" properties:@{@"Error Message":error.description}];
             }
             [session invalidateAndCancel];
         }];
@@ -262,9 +278,15 @@
             NSDictionary *firstResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
             if (firstResponse[@"error"])
             {
-                [self updateStatusWithString:[NSString stringWithFormat:@"API ERROR MESSAGE: %@", firstResponse[@"error"]]];
+                [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"API ERROR MESSAGE: %@", firstResponse[@"error"]] attributes:@{NSForegroundColorAttributeName:[NSColor redColor]}]];
+                [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportEnd object:nil];
                 return;
             }
+        }
+        
+        if (dataTask.countOfBytesExpectedToReceive > 0)
+        {
+            [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"%.2f%% received",(double)dataTask.countOfBytesReceived/(double)dataTask.countOfBytesExpectedToReceive*100] attributes:@{NSForegroundColorAttributeName:[NSColor grayColor]}]];
         }
         
         // Parse current chunk of data
@@ -272,7 +294,7 @@
         {
             case SBJson4ParserStopped:
             case SBJson4ParserComplete:
-                [self updateStatusWithString:[NSString stringWithFormat:@"%lu Events Parsed", self.events.count]];
+                [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"%lu Events Parsed", self.events.count] attributes:@{NSForegroundColorAttributeName:[NSColor grayColor]}]];
                 break;
             case SBJson4ParserWaitingForData:
                 break;
@@ -295,10 +317,10 @@
     NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
     if (httpResponse.statusCode == 200)
     {
-        [self updateStatusWithString:[NSString stringWithFormat:@"HTTP Status Code = %lu", httpResponse.statusCode]];
+        [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"HTTP Status Code = %lu", httpResponse.statusCode] attributes:@{NSForegroundColorAttributeName:[NSColor greenColor]}]];
     } else
     {
-        [self updateStatusWithString:[NSString stringWithFormat:@"BAD HTTP STATUS: %@", [httpResponse description]]];
+        [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"BAD HTTP STATUS: %@", [httpResponse description]] attributes:@{NSForegroundColorAttributeName:[NSColor redColor]}]];
     }
     
     completionHandler(NSURLSessionResponseAllow);
@@ -309,11 +331,18 @@
     
     if (error)
     {
-        [self updateStatusWithString:[NSString stringWithFormat:@"NSURLSessionTask Error: %@", error.localizedDescription]];
+        [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"NSURLSessionTask Error: %@", error.localizedDescription] attributes:@{NSForegroundColorAttributeName:[NSColor redColor]}]];
+        [[Mixpanel sharedInstance] track:@"Export URL Session Task Error" properties:@{@"Error Message":error.description}];
     } else
     {
-        [self updateStatusWithString:@"NSURLSessionTask Complete"];
-        //
+        Mixpanel *mixpanel = [Mixpanel sharedInstance];
+        [mixpanel.people increment:@"Export API Requests" by:@1];
+        [mixpanel registerSuperProperties:@{@"Export API Requests":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Export API Requests"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
+        [mixpanel track:@"API Request" properties:@{@"Type":@"Events",@"Rows":@(self.eventCount),@"$duration":@([[NSDate date] timeIntervalSince1970] - self.startTime)}];
+        
+        [self updateStatusWithString:[[NSAttributedString alloc] initWithString:@"NSURLSessionTask Complete" attributes:@{NSForegroundColorAttributeName:[NSColor greenColor]}]];
+        
+        // Hack to esnure queue is empty by adding synchronous empty task
         dispatch_sync(self.propQueue, ^{});
         __weak ExportRequest *weakSelf = self;
         AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
@@ -322,6 +351,7 @@
         }];
     }
     [session invalidateAndCancel];
+    
     NSDictionary *userInfo = @{kMPUserInfoKeyCount:@(self.eventCount),kMPUserInfoKeyType:@"event"};
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportEnd object:nil userInfo:userInfo];
 }
@@ -340,7 +370,8 @@
         // If the API response object has an error key, update status and return
         if (people[@"error"])
         {
-            [self updateStatusWithString:[NSString stringWithFormat:@"API Error message: %@",people[@"error"]]];
+            [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"API Error message: %@",people[@"error"]] attributes:@{NSForegroundColorAttributeName:[NSColor redColor]}]];
+            [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportEnd object:nil];
             return;
         }
         
@@ -360,15 +391,19 @@
             [self savePeopleToDatabase:people lastBatch:NO];
         } else
         {
+            Mixpanel *mixpanel = [Mixpanel sharedInstance];
+            [mixpanel.people increment:@"Engage API Requests" by:@1];
+            [mixpanel registerSuperProperties:@{@"Engage API Requests":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Engage API Requests"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
+            [mixpanel track:@"API Request" properties:@{@"Type":@"People",@"Rows":self.totalProfiles,@"$duration":@([[NSDate date] timeIntervalSince1970] - self.startTime)}];
+            
             // This is the last page of profiles
             [self savePeopleToDatabase:people lastBatch:YES];
         }
     } else
     {
-        [self updateStatusWithString:[NSString stringWithFormat:@"Error serializing People data. Error message: %@",peopleError.localizedDescription]];
+        [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"Error serializing People data. Error message: %@",peopleError.localizedDescription] attributes:@{NSForegroundColorAttributeName:[NSColor redColor]}]];
     }
-    
-    
+ 
     
 }
 
@@ -390,12 +425,12 @@
             [transaction setObject:event forKey:[[NSUUID UUID] UUIDString] inCollection:kMPDBCollectionNameEvents];
         }
     } completionBlock:^{
-        [weakSelf updateStatusWithString:[NSString stringWithFormat:@"Event Batch %lu saved successfully!", self.batchIndex]];
+        [weakSelf updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"Event Batch %lu saved successfully!", self.batchIndex+1] attributes:@{NSForegroundColorAttributeName:[NSColor grayColor]}]];
         weakSelf.batchIndex++;
         
         // Post notification with new Event Count
         NSDictionary *userInfo = @{kMPUserInfoKeyCount:@(weakSelf.eventCount),kMPUserInfoKeyType:@"event"};
-        [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportEnd object:nil userInfo:userInfo];
+        [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportUpdate object:nil userInfo:userInfo];
     }];
 }
 
@@ -419,10 +454,10 @@
         }
     } completionBlock:^{
         NSNumber *page = people[kMPPeopleKeyPage];
-        [weakSelf updateStatusWithString:[NSString stringWithFormat:@"Page %@ of %lu saved",page,[weakSelf.totalProfiles integerValue]/1000]];
+        [weakSelf updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"Page %lu of %lu saved",[page integerValue] + 1,[weakSelf.totalProfiles integerValue]/1000+1] attributes:@{NSForegroundColorAttributeName:[NSColor grayColor]}]];
         
         // Post notification with new People count
-        NSDictionary *userInfo = @{kMPUserInfoKeyType:@"people",kMPUserInfoKeyCount:@([page integerValue] * 1000)};
+        NSDictionary *userInfo = @{kMPUserInfoKeyType:@"people",kMPUserInfoKeyCount:@(([page integerValue]+1) * 1000)};
         [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportUpdate object:nil userInfo:userInfo];
         
         if (lastBatch)
@@ -450,6 +485,11 @@
     }
 }
 #pragma mark - Utility Methods
+
+- (void)cancel
+{
+    [self.session invalidateAndCancel];
+}
 
 - (NSString *)signatureForParams:(NSMutableDictionary *)URLParams
 {
@@ -488,7 +528,7 @@
     return eventsString;
 }
 
-- (void)updateStatusWithString:(NSString *)status
+- (void)updateStatusWithString:(NSAttributedString *)status
 {
     NSDictionary *statusInfo = @{kMPUserInfoKeyType:kMPStatusUpdate,kMPUserInfoKeyStatus:status};
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPStatusUpdate object:nil userInfo:statusInfo];

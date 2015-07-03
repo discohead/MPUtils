@@ -11,31 +11,62 @@
 #import "CSVParser.h"
 #import "ViewController.h"
 #import <YapDatabase/YapDatabase.h>
+#import <Mixpanel-OSX-Community/Mixpanel.h>
 
 @interface AppDelegate () <NSOpenSavePanelDelegate>
 
+@property (strong, nonatomic) NSString *basePath;
 @property (strong, nonatomic) NSString *databasePath;
 
 @end
 
 @implementation AppDelegate
 
-- (NSString *)databasePath
-{
-    return [NSString stringWithFormat:@"%@/Library/Application Support/%@/YapDatabase/MPUtils.sqlite",NSHomeDirectory(),[[NSBundle mainBundle] bundleIdentifier]];
+- (NSString *)basePath {
+    
+    if (!_basePath)
+    {
+        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+        NSString *documentsDirectory = [paths objectAtIndex:0];
+        NSFileManager *fileManager= [NSFileManager defaultManager];
+        NSString *mputilsDirectory = [documentsDirectory stringByAppendingPathComponent:@"MPUtils"];
+        NSError *error = nil;
+        if(![fileManager createDirectoryAtPath:mputilsDirectory withIntermediateDirectories:YES attributes:nil error:&error]) {
+            // An error has occurred
+            [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"Failed to create directory \"%@\". Error: %@ - Falling back to ~/Documents", mputilsDirectory, error.localizedDescription] attributes:@{NSForegroundColorAttributeName:[NSColor redColor]}]];
+            _basePath = documentsDirectory;
+        } else {
+            _basePath = mputilsDirectory;
+        }
+    }
+    return _basePath;
 }
 
-- (NSString *)filePath {
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString *documentDirectory = [paths objectAtIndex:0];
-    return [documentDirectory stringByAppendingPathComponent:@"database.sqlite"];
+- (NSString *)databasePath
+{
+    if (!_databasePath)
+    {
+        NSFileManager *fileManager= [NSFileManager defaultManager];
+        NSString *databaseDirectory = [self.basePath stringByAppendingPathComponent:@"database"];
+        NSError *error = nil;
+        if(![fileManager createDirectoryAtPath:databaseDirectory withIntermediateDirectories:YES attributes:nil error:&error]) {
+            // An error has occurred
+            [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"Failed to create directory \"%@\". Error: %@ - Falling back to ~/Documents", databaseDirectory, error.localizedDescription] attributes:@{NSForegroundColorAttributeName:[NSColor redColor]}]];
+            NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+            NSString *documentsDirectory = [paths objectAtIndex:0];
+            _databasePath = [documentsDirectory stringByAppendingPathComponent:@"database.sqlite"];
+        } else {
+            _databasePath = [databaseDirectory stringByAppendingPathComponent:@"database.sqlite"];
+        }
+    }
+    return _databasePath;
 }
 
 - (YapDatabase *)sharedYapDatabase {
     static YapDatabase *_sharedYapDatabase = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        _sharedYapDatabase = [[YapDatabase alloc]initWithPath:[self filePath]];
+        _sharedYapDatabase = [[YapDatabase alloc]initWithPath:self.databasePath];
     });
     
     return _sharedYapDatabase;
@@ -44,15 +75,35 @@
 #pragma mark - App Life Cycle
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
+    
     // Setup Database and connection
     self.database = [self sharedYapDatabase];
-    [self updateStatusWithString:[NSString stringWithFormat:@"Database created at %@",self.databasePath]];
+    [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"Database created at %@",[[NSURL fileURLWithPath:self.databasePath]absoluteString]]]];
     self.connection = [self.database newConnection];
+    
+    //Ensure we're starting with a clean database
+    [self updateStatusWithString:[[NSAttributedString alloc] initWithString:@"Initializing Database..." attributes:@{NSForegroundColorAttributeName:[NSColor grayColor]}]];
+    [self.connection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+        [transaction removeAllObjectsInAllCollections];
+    }];
+    [self updateStatusWithString:[[NSAttributedString alloc] initWithString:@"Database Initialized!" attributes:@{NSForegroundColorAttributeName:[NSColor grayColor]}]];
+    
+    Mixpanel *mixpanel = [Mixpanel sharedInstanceWithToken:@"412b93fb1e3b8204fedf7cdc22d2b570"];
+    [mixpanel flush];
+    mixpanel.flushInterval = 30.0;
+    [mixpanel identify:mixpanel.distinctId];
+    NSDictionary *created = @{@"$created":[NSDate date]};
+    [mixpanel.people setOnce:created];
+    [mixpanel registerSuperPropertiesOnce:created];
+    [mixpanel.people increment:@{@"App Opens":@1}];
+    [mixpanel registerSuperProperties:@{@"App Opens":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"App Opens"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
+    [mixpanel track:@"$app_open"];
+    [mixpanel flush];
+
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
-    // Delete Database on Termination
-
+    
 }
 
 
@@ -68,17 +119,30 @@
         
         if (result == NSFileHandlingPanelOKButton)
         {
+            CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
             // Export->Events->Raw
             if (sender.tag == 0)
             {
-                CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
-                [parser eventsToCSVWithPeopleProperties:NO];
-            
+                Mixpanel *mixpanel = [Mixpanel sharedInstance];
+                [mixpanel.people increment:@{@"Raw Event CSV Exports":@1,@"Total CSV Exports":@1}];
+                [mixpanel registerSuperProperties:@{@"Raw Event CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Raw Event CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
+                [mixpanel registerSuperProperties:@{@"Total CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Total CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
+                
+                dispatch_async(dispatch_queue_create("csv", NULL), ^{
+                    [parser eventsToCSVWithPeopleProperties:NO];
+                });
+                
             // Export->Events->w/People Props
             } else if (sender.tag == 1)
             {
-                CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
-                [parser eventsToCSVWithPeopleProperties:YES];
+                dispatch_async(dispatch_queue_create("csv", NULL), ^{
+                    Mixpanel *mixpanel = [Mixpanel sharedInstance];
+                    [mixpanel.people increment:@{@"Combined Event CSV Exports":@1,@"Total CSV Exports":@1}];
+                    [mixpanel registerSuperProperties:@{@"Combined Event CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Combined Event CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
+                    [mixpanel registerSuperProperties:@{@"Total CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Total CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
+                    
+                    [parser eventsToCSVWithPeopleProperties:YES];
+                });
             }
         }
     }];
@@ -96,8 +160,15 @@
         // Export->People->Profiles
         if (result == NSFileHandlingPanelOKButton)
         {
+            Mixpanel *mixpanel = [Mixpanel sharedInstance];
+            [mixpanel.people increment:@{@"People Profile CSV Exports":@1,@"Total CSV Exports":@1}];
+            [mixpanel registerSuperProperties:@{@"People Profile CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"People Profile CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
+            [mixpanel registerSuperProperties:@{@"Total CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Total CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
+            
             CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
-            [parser peopleToCSV];
+            dispatch_async(dispatch_queue_create("csv", NULL), ^{
+                [parser peopleToCSV];
+            });
         }
     }];
 }
@@ -113,8 +184,15 @@
         // Export->People->Transactions
         if (result == NSFileHandlingPanelOKButton)
         {
+            Mixpanel *mixpanel = [Mixpanel sharedInstance];
+            [mixpanel.people increment:@{@"Transactions CSV Exports":@1,@"Total CSV Exports":@1}];
+            [mixpanel registerSuperProperties:@{@"Transactions CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Transactions CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
+            [mixpanel registerSuperProperties:@{@"Total CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Total CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
+            
             CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
-            [parser transactionsToCSV];
+            dispatch_async(dispatch_queue_create("csv", NULL), ^{
+                [parser transactionsToCSV];
+            });
         }
     }];
 }
@@ -130,15 +208,32 @@
         // Export->People->From Events
         if (result == NSFileHandlingPanelOKButton)
         {
+            Mixpanel *mixpanel = [Mixpanel sharedInstance];
+            [mixpanel.people increment:@{@"People From Events CSV Exports":@1,@"Total CSV Exports":@1}];
+            [mixpanel registerSuperProperties:@{@"People From Events CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"People From Events CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
+            [mixpanel registerSuperProperties:@{@"Total CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Total CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
+            
             CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
-            [parser peopleFromEventsToCSV];
+            dispatch_async(dispatch_queue_create("csv", NULL), ^{
+                [parser peopleFromEventsToCSV];
+            });
         }
     }];
 }
 
+- (IBAction)launchExportURLinBrowser:(id)sender
+{
+    Mixpanel *mixpanel = [Mixpanel sharedInstance];
+    [mixpanel.people increment:@{@"Documentation Opens":@1}];
+    [mixpanel registerSuperProperties:@{@"Documentation Opens":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Documentation Opens"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
+    [[Mixpanel sharedInstance] track:@"Opened Documentation"];
+    
+    [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"https://mixpanel.com/docs/api-documentation/data-export-api"]];
+}
+
 #pragma mark - Utility Methods
 
-- (void)updateStatusWithString:(NSString *)status
+- (void)updateStatusWithString:(NSAttributedString *)status
 {
     NSDictionary *statusInfo = @{kMPUserInfoKeyType:kMPStatusUpdate,kMPUserInfoKeyStatus:status};
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPStatusUpdate object:nil userInfo:statusInfo];
@@ -150,8 +245,7 @@
     savePanel.canCreateDirectories = YES;
     savePanel.delegate = self;
     savePanel.allowedFileTypes = @[@"csv",@"CSV"];
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    savePanel.directoryURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@", paths[0]]];
+    savePanel.directoryURL = [NSURL URLWithString:self.basePath];
     
     return savePanel;
 }

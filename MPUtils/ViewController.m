@@ -10,13 +10,15 @@
 #import "MPUConstants.h"
 #import "ExportRequest.h"
 #import "AppDelegate.h"
+#import "ProjectEditViewController.h"
 #import <YapDatabase/YapDatabase.h>
+#import <Mixpanel-OSX-Community/Mixpanel.h>
 
 @interface ViewController ()
 
 @property (weak) IBOutlet NSPopUpButton *projectPopUpButton;
 @property (strong, nonatomic) NSUserDefaultsController *userDefaultsController;
-@property (strong, nonatomic) NSArrayController *projectsArrayController;
+@property (strong, nonatomic) IBOutlet NSArrayController *projectsArrayController;
 @property (strong, nonatomic) NSArray *projects;
 @property (weak) IBOutlet NSProgressIndicator *progressIndicator;
 @property (weak) IBOutlet NSTextField *eventsTextField;
@@ -30,14 +32,29 @@
 @property (weak) IBOutlet NSTextField *eventCountLabel;
 @property (weak) IBOutlet NSTextField *peopleCountLabel;
 @property (unsafe_unretained) IBOutlet NSTextView *statusLogTextView;
-@property (weak) IBOutlet NSTableView *tableView;
-
+@property (strong, nonatomic) NSDate *maxDate;
+@property (weak, nonatomic) ExportRequest *currentExport;
+@property (nonatomic) NSTimeInterval startTime;
 
 @end
 
 @implementation ViewController
 
 #pragma mark - Lazy Properties
+
+- (NSTimeInterval)startTime
+{
+    if (!_startTime)
+    {
+        _startTime = [[NSDate date] timeIntervalSince1970];
+    }
+    return _startTime;
+}
+
+- (NSDate *)maxDate
+{
+    return [NSDate dateWithTimeIntervalSinceNow:-24*60*60];
+}
 
 - (NSDateFormatter *)dateFormatter
 {
@@ -59,12 +76,12 @@
 
 - (NSString *)apiKey
 {
-    return self.projects[self.tableView.selectedRow][kMPUserDefaultsProjectAPIKeyKey];
+    return self.projects[self.projectPopUpButton.indexOfSelectedItem][kMPUserDefaultsProjectAPIKeyKey];
 }
 
 - (NSString *)apiSecret
 {
-    return self.projects[self.tableView.selectedRow][kMPUserDefaultsProjectAPISecretKey];
+    return self.projects[self.projectPopUpButton.indexOfSelectedItem][kMPUserDefaultsProjectAPISecretKey];
 }
 
 - (NSArray *)projects
@@ -82,6 +99,7 @@
 - (void)awakeFromNib
 {
     [super awakeFromNib];
+    
 }
 
 - (void)viewDidLoad {
@@ -89,14 +107,23 @@
     
     [self registerForNotifications];
     [self restorePreviousSettings];
+    
+    [self updateCountLabelOfType:@"event" withCount:@0];
+    [self updateCountLabelOfType:@"people" withCount:@0];
+}
 
+-(void)setSelectedProjectIndex:(NSUInteger)index
+{
+    [self.projectPopUpButton selectItemAtIndex:index];
 }
 
 #pragma mark - IBActions
 
 - (IBAction)projectSelected:(NSPopUpButton *)sender {
     NSDictionary *project = self.projects[sender.indexOfSelectedItem];
-    [self appendToStatusLog:[NSString stringWithFormat:@"Selected Project = %@", project]];
+    [self appendToStatusLog:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"Selected Project = %@", project] attributes:@{NSForegroundColorAttributeName:[NSColor purpleColor]}]];
+    
+    [[Mixpanel sharedInstance] track:@"Selected Project"];
     
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     [userDefaults setObject:@(sender.indexOfSelectedItem) forKey:kMPUserDefaultsSelectedProjectKey];
@@ -106,6 +133,7 @@
 - (IBAction)loadEventsButtonPressed:(id)sender {
     [self.progressIndicator startAnimation:sender];
     ExportRequest *request = [ExportRequest requestWithAPIKey:self.apiKey secret:self.apiSecret];
+    self.currentExport = request;
     [request requestForEvents:self.eventsArray fromDate:self.fromDatePicker.dateValue toDate:self.toDatePicker.dateValue where:[self.whereTextField stringValue]];
     
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
@@ -118,6 +146,7 @@
 - (IBAction)loadPeopleButtonPressed:(id)sender {
     [self.progressIndicator startAnimation:sender];
     ExportRequest *request = [ExportRequest requestWithAPIKey:self.apiKey secret:self.apiSecret];
+    self.currentExport = request;
     [request requestForPeopleWhere:[self.whereTextField stringValue] sessionID:@"" page:0];
     
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
@@ -127,22 +156,31 @@
 - (IBAction)resetButtonPressed:(id)sender {
     [self.progressIndicator startAnimation:sender];
     
+    [[Mixpanel sharedInstance] track:@"Reset Pressed"];
+    
+    [self.currentExport cancel];
+    self.currentExport = nil;
+    
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
     
     [appDelegate.connection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
         [transaction removeAllObjectsInAllCollections];
     }];
-    
-    [self appendToStatusLog:@"Database Reset!"];
+    [self appendToStatusLog:[[NSAttributedString alloc] initWithString:@"Database Reset!" attributes:@{NSForegroundColorAttributeName:[NSColor orangeColor]}]];
     
     [self updateCountLabelOfType:@"event" withCount:@0];
     [self updateCountLabelOfType:@"people" withCount:@0];
+    
     [self.progressIndicator stopAnimation:sender];
 }
 
 #pragma mark - NSNotification Methods
 
 - (void)registerForNotifications {
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(editingDidEnd:)
+                                                 name:NSControlTextDidEndEditingNotification object:nil];
+    
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveCSVNotification:) name:kMPCSVWritingBegan object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveCSVNotification:) name:kMPCSVWritingEnded object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveExportNotification:) name:kMPExportBegan object:nil];
@@ -158,11 +196,16 @@
         [self.progressIndicator startAnimation:self];
     } else if ([[notification name] isEqualToString:kMPExportUpdate] || [[notification name] isEqualToString:kMPExportEnd])
     {
-        NSNumber *count = [notification userInfo][kMPUserInfoKeyCount];
-        NSString *type = [notification userInfo][kMPUserInfoKeyType];
-        [self updateCountLabelOfType:type withCount:count];
+        if ([notification userInfo])
+        {
+            NSNumber *count = [notification userInfo][kMPUserInfoKeyCount];
+            NSString *type = [notification userInfo][kMPUserInfoKeyType];
+            [self updateCountLabelOfType:type withCount:count];
+        }
+        
         if ([[notification name] isEqualToString:kMPExportEnd])
         {
+            self.currentExport = nil;
             [self.progressIndicator stopAnimation:self];
         }
     }
@@ -172,13 +215,23 @@
 {
     if ([[notification name] isEqualToString:kMPCSVWritingBegan])
     {
+        self.startTime = [[NSDate date] timeIntervalSince1970];
         [self.progressIndicator startAnimation:self];
-        [self appendToStatusLog:@"CSV Export Began"];
+        [self appendToStatusLog:[[NSAttributedString alloc] initWithString:@"CSV Export Began" attributes:@{NSForegroundColorAttributeName:[NSColor magentaColor]}]];
     } else if ([[notification name] isEqualToString:kMPCSVWritingEnded])
     {
+        NSString *type = [notification userInfo][@"Type"];
+        NSString *subType = [notification userInfo][@"Sub-Type"];
+        NSNumber *rows = [notification userInfo][@"Rows"];
+        [[Mixpanel sharedInstance] track:@"CSV Export " properties:@{@"$duration":@([[NSDate date] timeIntervalSince1970] - self.startTime),@"Type":type,@"Sub-Type":subType,@"Rows":rows}];
         [self.progressIndicator stopAnimation:self];
-        [self appendToStatusLog:@"CSV Export Ended"];
+        [self appendToStatusLog:[[NSAttributedString alloc] initWithString:@"CSV Export Ended" attributes:@{NSForegroundColorAttributeName:[NSColor magentaColor]}]];
     }
+}
+
+- (void)editingDidEnd:(NSNotification *)notification
+{
+    [self.userDefaultsController save:self];
 }
 
 - (void)receiveStatusUpdate:(NSNotification *)notification
@@ -189,14 +242,23 @@
     }
 }
 
+- (void)prepareForSegue:(NSStoryboardSegue *)segue sender:(id)sender
+{
+    if ([segue.identifier isEqualToString:@"editProject"])
+    {
+        ProjectEditViewController *pvc = (ProjectEditViewController *)segue.destinationController;
+        [pvc.projectPopUpButton selectItemAtIndex:self.projectPopUpButton.indexOfSelectedItem];
+    }
+}
+
 #pragma mark - Utility Methods
 
 - (void)restorePreviousSettings
 {
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
     
-    //NSNumber *selectedProjectIndex = [userDefaults objectForKey:kMPUserDefaultsSelectedProjectKey];
-    //if (selectedProjectIndex) [self setSelectedProjectIndex:[selectedProjectIndex integerValue]];
+    NSNumber *selectedProjectIndex = [userDefaults objectForKey:kMPUserDefaultsSelectedProjectKey];
+    if (selectedProjectIndex) [self setSelectedProjectIndex:[selectedProjectIndex integerValue]];
     
     NSDate *fromDate = [userDefaults objectForKey:kMPUserDefaultsFromDateKey];
     NSDate *toDate = [userDefaults objectForKey:kMPUserDefaultsToDateKey];
@@ -243,12 +305,19 @@
     }
 }
 
-- (void)appendToStatusLog:(NSString*)text
+- (void)appendToStatusLog:(NSAttributedString*)text
 {
     dispatch_async(dispatch_get_main_queue(), ^{
-        NSAttributedString* attr = [[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@\n",text]];
         
-        [[self.statusLogTextView textStorage] appendAttributedString:attr];
+        [[self.statusLogTextView textStorage] appendAttributedString:text];
+        
+        NSAttributedString* newLine = [[NSAttributedString alloc] initWithString:@"\n\n"];
+        [[self.statusLogTextView textStorage] appendAttributedString:newLine];
+        
+        [self.statusLogTextView setEditable:YES];
+        [self.statusLogTextView checkTextInDocument:nil];
+        [self.statusLogTextView setEditable:NO];
+        
         [self.statusLogTextView scrollRangeToVisible:NSMakeRange([[self.statusLogTextView string] length], 0)];
     });
 }

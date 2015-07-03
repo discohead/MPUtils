@@ -35,7 +35,7 @@
 
 - (instancetype)initForWritingToFile:(NSString *)filePath
 {
-    [self updateStatusWithString:[NSString stringWithFormat:@"CSV writer path = %@",filePath]];
+    [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"CSV writer path = %@",[[NSURL fileURLWithPath:filePath] absoluteString]] attributes:@{NSForegroundColorAttributeName:[NSColor darkGrayColor]}]];
     CSVParser *parser = [[CSVParser alloc] init];
     parser.writer = [[CHCSVWriter alloc] initForWritingToCSVFile:filePath];
     return parser;
@@ -51,6 +51,7 @@
     __block NSArray *eventProps = [NSArray array];
     __block NSArray *peopleProps = [NSArray array];
     NSMutableArray *headers = [NSMutableArray array];
+    __block int rows = 0;
     
     [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
         eventProps = [transaction objectForKey:kMPDBPropertiesKeyEvents inCollection:kMPDBCollectionNamePropertiesEvents];
@@ -82,10 +83,11 @@
             }
             
             [weakSelf.writer finishLine];
+            rows++;
         }];
     }];
-    
-    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil];
+    NSString *subType = peopleProperties ? @"Combined" : @"Raw";
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil userInfo:@{@"Type":@"Events",@"Sub-Type":subType, @"Rows":@(rows)}];
 }
 
 
@@ -94,6 +96,7 @@
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingBegan object:nil];
     __weak CSVParser *weakSelf = self;
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
+    __block int rows = 0;
     
     __block NSArray *peopleProps = [NSArray array];
     
@@ -106,10 +109,11 @@
     [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
         [transaction enumerateKeysAndObjectsInCollection:kMPDBCollectionNamePeople usingBlock:^(NSString *key, id profile, BOOL *stop) {
             [weakSelf writeProfile:profile withProperties:peopleProps];
+            rows++;
         }];
     }];
     
-    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil userInfo:@{@"Type":@"People",@"Sub-Type":@"Profiles",@"Rows":@(rows)}];
     
 }
 
@@ -127,7 +131,7 @@
             {
                 if (profile[@"$properties"][peopleProp])
                 {
-                    [weakSelf.writer writeField:peopleProp];
+                    [weakSelf.writer writeField:profile[@"$properties"][peopleProp]];
                 } else
                 {
                     [weakSelf.writer writeField:@""];
@@ -194,6 +198,7 @@
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingBegan object:nil];
     __weak CSVParser *weakSelf = self;
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
+    __block int rows = 0;
     
     [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
         
@@ -221,12 +226,13 @@
                         }
                     }
                     [weakSelf.writer finishLine];
+                    rows++;
                 }
             }
         }];
     }];
     
-    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil userInfo:@{@"Type":@"People",@"Sub-Type":@"Transcations",@"Rows":@(rows)}];
 }
 
 - (void)peopleFromEventsToCSV
@@ -237,6 +243,7 @@
     __weak CSVParser *weakSelf = self;
     __block NSMutableSet *distinctIDs = [NSMutableSet set];
     __block NSArray *properties = [NSArray array];
+    __block int rows = 0;
     
     [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
         [transaction enumerateKeysAndObjectsInCollection:kMPDBCollectionNameEvents usingBlock:^(NSString *key, id object, BOOL *stop) {
@@ -250,6 +257,8 @@
     [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
         properties = [transaction objectForKey:kMPDBPropertiesKeyPeople inCollection:kMPDBCollectionNamePropertiesPeople];
     }];
+    
+    [self writeHeadersForType:@"people" withProperties:properties];
     
     [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
         for (NSString *distinctID in distinctIDs)
@@ -268,17 +277,18 @@
                         [weakSelf.writer writeField:@""];
                     }
                 }
+                [weakSelf.writer finishLine];
+                rows++;
             }
-            [weakSelf.writer finishLine];
         }
     }];
     
-    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil userInfo:@{@"Type":@"People",@"Sub-Type":@"From Events",@"Rows":@(rows)}];
 }
 
 #pragma mark - Utility Methods
 
-- (void)updateStatusWithString:(NSString *)status
+- (void)updateStatusWithString:(NSAttributedString *)status
 {
     NSDictionary *statusInfo = @{kMPUserInfoKeyType:kMPStatusUpdate,kMPUserInfoKeyStatus:status};
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPStatusUpdate object:nil userInfo:statusInfo];
