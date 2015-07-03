@@ -489,6 +489,9 @@
 - (void)cancel
 {
     [self.session invalidateAndCancel];
+    
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportCancelled object:nil];
+    
 }
 
 - (NSString *)signatureForParams:(NSMutableDictionary *)URLParams

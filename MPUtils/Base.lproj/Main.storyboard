@@ -694,11 +694,11 @@
                                             </connections>
                                         </button>
                                         <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Sxx-ia-RqX">
-                                            <rect key="frame" x="968" y="7" width="76" height="32"/>
+                                            <rect key="frame" x="906" y="7" width="138" height="32"/>
                                             <constraints>
-                                                <constraint firstAttribute="width" constant="64" id="uQd-Ts-bsE"/>
+                                                <constraint firstAttribute="width" constant="126" id="uQd-Ts-bsE"/>
                                             </constraints>
-                                            <buttonCell key="cell" type="push" title="Reset" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="qE7-LO-fOn">
+                                            <buttonCell key="cell" type="push" title="Reset Database" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="qE7-LO-fOn">
                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="system"/>
                                             </buttonCell>
@@ -804,6 +804,19 @@
                                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                             </textFieldCell>
                                         </textField>
+                                        <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="9v9-Xf-nnu">
+                                            <rect key="frame" x="906" y="40" width="138" height="32"/>
+                                            <constraints>
+                                                <constraint firstAttribute="width" constant="126" id="EPW-Qr-k6j"/>
+                                            </constraints>
+                                            <buttonCell key="cell" type="push" title="Cancel Request" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="o7A-aU-UC1">
+                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                <font key="font" metaFont="system"/>
+                                            </buttonCell>
+                                            <connections>
+                                                <action selector="canceRequestPressed:" target="XfG-lQ-9wD" id="qzW-Oi-lu8"/>
+                                            </connections>
+                                        </button>
                                     </subviews>
                                 </view>
                                 <constraints>
@@ -832,6 +845,7 @@
                                     <constraint firstItem="aTr-oX-yCk" firstAttribute="leading" secondItem="q4v-zR-UVQ" secondAttribute="trailing" constant="10" id="dEm-0J-NII"/>
                                     <constraint firstItem="Ti0-rW-tpD" firstAttribute="top" secondItem="ahx-XP-Vrf" secondAttribute="bottom" constant="16" id="eV3-ji-kc3"/>
                                     <constraint firstItem="ahx-XP-Vrf" firstAttribute="top" secondItem="aTr-oX-yCk" secondAttribute="bottom" constant="10" id="epU-Tf-43W"/>
+                                    <constraint firstItem="Sxx-ia-RqX" firstAttribute="top" secondItem="9v9-Xf-nnu" secondAttribute="bottom" constant="12" id="gGM-r5-YM9"/>
                                     <constraint firstItem="q4v-zR-UVQ" firstAttribute="leading" secondItem="YZH-R0-0Dr" secondAttribute="leading" constant="16" id="h4K-qV-fms"/>
                                     <constraint firstAttribute="bottom" secondItem="wb2-em-IpJ" secondAttribute="bottom" constant="29" id="h85-iW-qWT"/>
                                     <constraint firstItem="Sxx-ia-RqX" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="Ti0-rW-tpD" secondAttribute="trailing" constant="8" id="hAo-99-hYA"/>
@@ -842,6 +856,7 @@
                                     <constraint firstItem="57X-Mj-W2J" firstAttribute="top" secondItem="YZH-R0-0Dr" secondAttribute="top" constant="27" id="one-rD-eH9"/>
                                     <constraint firstItem="SDl-fw-J28" firstAttribute="top" secondItem="YZH-R0-0Dr" secondAttribute="top" constant="25" id="pEO-un-3zs"/>
                                     <constraint firstAttribute="bottom" secondItem="Ti0-rW-tpD" secondAttribute="bottom" constant="125" id="pJW-6w-yE8"/>
+                                    <constraint firstAttribute="trailing" secondItem="9v9-Xf-nnu" secondAttribute="trailing" constant="16" id="sdR-Zy-fq2"/>
                                     <constraint firstItem="N03-1j-lde" firstAttribute="top" secondItem="aTr-oX-yCk" secondAttribute="bottom" constant="8" id="uDS-7x-779"/>
                                     <constraint firstAttribute="trailing" secondItem="SDl-fw-J28" secondAttribute="trailing" constant="16" id="xJw-xO-e1L"/>
                                     <constraint firstAttribute="height" constant="262" id="xfA-fs-J9u"/>

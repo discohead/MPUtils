@@ -7,10 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7F096E491B18D76F00B9AEEC /* MLCalendarBackground.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F096E431B18D76F00B9AEEC /* MLCalendarBackground.m */; };
-		7F096E4A1B18D76F00B9AEEC /* MLCalendarCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F096E451B18D76F00B9AEEC /* MLCalendarCell.m */; };
-		7F096E4B1B18D76F00B9AEEC /* MLCalendarView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F096E471B18D76F00B9AEEC /* MLCalendarView.m */; };
-		7F096E4C1B18D76F00B9AEEC /* MLCalendarView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 7F096E481B18D76F00B9AEEC /* MLCalendarView.xib */; };
 		7F30AC0F1AC7FBF700F85184 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC0E1AC7FBF700F85184 /* AppDelegate.m */; };
 		7F30AC111AC7FBF700F85184 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC101AC7FBF700F85184 /* main.m */; };
 		7F30AC141AC7FBF700F85184 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC131AC7FBF700F85184 /* ViewController.m */; };
@@ -52,13 +48,6 @@
 
 /* Begin PBXFileReference section */
 		2520AD2E8E9D3B7257C95380 /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		7F096E421B18D76F00B9AEEC /* MLCalendarBackground.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MLCalendarBackground.h; sourceTree = "<group>"; };
-		7F096E431B18D76F00B9AEEC /* MLCalendarBackground.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MLCalendarBackground.m; sourceTree = "<group>"; };
-		7F096E441B18D76F00B9AEEC /* MLCalendarCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MLCalendarCell.h; sourceTree = "<group>"; };
-		7F096E451B18D76F00B9AEEC /* MLCalendarCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MLCalendarCell.m; sourceTree = "<group>"; };
-		7F096E461B18D76F00B9AEEC /* MLCalendarView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MLCalendarView.h; sourceTree = "<group>"; };
-		7F096E471B18D76F00B9AEEC /* MLCalendarView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MLCalendarView.m; sourceTree = "<group>"; };
-		7F096E481B18D76F00B9AEEC /* MLCalendarView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MLCalendarView.xib; sourceTree = "<group>"; };
 		7F30AC081AC7FBF700F85184 /* MPUtils.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MPUtils.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7F30AC0C1AC7FBF700F85184 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		7F30AC0D1AC7FBF700F85184 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -77,14 +66,14 @@
 		7F30AC541AC7FD1700F85184 /* ExportRequest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ExportRequest.m; sourceTree = "<group>"; };
 		7F30AC561AC7FE6E00F85184 /* MPUConstants.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPUConstants.h; sourceTree = "<group>"; };
 		7F30AC571AC7FE6E00F85184 /* MPUConstants.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPUConstants.m; sourceTree = "<group>"; };
-		7F30AC5A1AC7FE8700F85184 /* NewProjectViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NewProjectViewController.h; sourceTree = "<group>"; };
-		7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NewProjectViewController.m; sourceTree = "<group>"; };
+		7F30AC5A1AC7FE8700F85184 /* NewProjectViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NewProjectViewController.h; path = View/NewProjectViewController.h; sourceTree = "<group>"; };
+		7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = NewProjectViewController.m; path = View/NewProjectViewController.m; sourceTree = "<group>"; };
 		7F30AC5F1AC8007700F85184 /* NSString+Hashes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Hashes.h"; sourceTree = "<group>"; };
 		7F30AC601AC8007700F85184 /* NSString+Hashes.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Hashes.m"; sourceTree = "<group>"; };
 		7F609C751AC845EF00807CA6 /* CSVParser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CSVParser.h; sourceTree = "<group>"; };
 		7F609C761AC845EF00807CA6 /* CSVParser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CSVParser.m; sourceTree = "<group>"; };
-		7F862C791AD5885900968B1D /* ProjectEditViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ProjectEditViewController.h; sourceTree = "<group>"; };
-		7F862C7A1AD5885900968B1D /* ProjectEditViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProjectEditViewController.m; sourceTree = "<group>"; };
+		7F862C791AD5885900968B1D /* ProjectEditViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ProjectEditViewController.h; path = View/ProjectEditViewController.h; sourceTree = "<group>"; };
+		7F862C7A1AD5885900968B1D /* ProjectEditViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = ProjectEditViewController.m; path = View/ProjectEditViewController.m; sourceTree = "<group>"; };
 		C40F948E161298748CCD40DE /* Pods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.debug.xcconfig; path = "Pods/Target Support Files/Pods/Pods.debug.xcconfig"; sourceTree = "<group>"; };
 		C5DF7360311B9FAEEFD7DED7 /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -108,18 +97,17 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		7F096E411B18D76F00B9AEEC /* MLCalendar */ = {
+		7F087F041B46ECF50044A9B9 /* Controllers */ = {
 			isa = PBXGroup;
 			children = (
-				7F096E481B18D76F00B9AEEC /* MLCalendarView.xib */,
-				7F096E421B18D76F00B9AEEC /* MLCalendarBackground.h */,
-				7F096E431B18D76F00B9AEEC /* MLCalendarBackground.m */,
-				7F096E441B18D76F00B9AEEC /* MLCalendarCell.h */,
-				7F096E451B18D76F00B9AEEC /* MLCalendarCell.m */,
-				7F096E461B18D76F00B9AEEC /* MLCalendarView.h */,
-				7F096E471B18D76F00B9AEEC /* MLCalendarView.m */,
+				7F30AC121AC7FBF700F85184 /* ViewController.h */,
+				7F30AC131AC7FBF700F85184 /* ViewController.m */,
+				7F862C791AD5885900968B1D /* ProjectEditViewController.h */,
+				7F862C7A1AD5885900968B1D /* ProjectEditViewController.m */,
+				7F30AC5A1AC7FE8700F85184 /* NewProjectViewController.h */,
+				7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */,
 			);
-			path = MLCalendar;
+			name = Controllers;
 			sourceTree = "<group>";
 		};
 		7F30ABFF1AC7FBF700F85184 = {
@@ -147,16 +135,15 @@
 		7F30AC0A1AC7FBF700F85184 /* MPUtils */ = {
 			isa = PBXGroup;
 			children = (
-				7F30AC531AC7FD1700F85184 /* ExportRequest.h */,
-				7F30AC541AC7FD1700F85184 /* ExportRequest.m */,
 				7F30AC0D1AC7FBF700F85184 /* AppDelegate.h */,
 				7F30AC0E1AC7FBF700F85184 /* AppDelegate.m */,
-				7F30AC121AC7FBF700F85184 /* ViewController.h */,
-				7F30AC131AC7FBF700F85184 /* ViewController.m */,
+				7F30AC531AC7FD1700F85184 /* ExportRequest.h */,
+				7F30AC541AC7FD1700F85184 /* ExportRequest.m */,
 				7F609C751AC845EF00807CA6 /* CSVParser.h */,
 				7F609C761AC845EF00807CA6 /* CSVParser.m */,
-				7F30AC151AC7FBF700F85184 /* Images.xcassets */,
+				7F087F041B46ECF50044A9B9 /* Controllers */,
 				7F30AC591AC7FE8700F85184 /* View */,
+				7F30AC151AC7FBF700F85184 /* Images.xcassets */,
 				7F30AC0B1AC7FBF700F85184 /* Supporting Files */,
 			);
 			path = MPUtils;
@@ -210,12 +197,7 @@
 		7F30AC591AC7FE8700F85184 /* View */ = {
 			isa = PBXGroup;
 			children = (
-				7F096E411B18D76F00B9AEEC /* MLCalendar */,
-				7F862C791AD5885900968B1D /* ProjectEditViewController.h */,
-				7F862C7A1AD5885900968B1D /* ProjectEditViewController.m */,
 				7F30AC171AC7FBF800F85184 /* Main.storyboard */,
-				7F30AC5A1AC7FE8700F85184 /* NewProjectViewController.h */,
-				7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -322,7 +304,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7F096E4C1B18D76F00B9AEEC /* MLCalendarView.xib in Resources */,
 				7F30AC161AC7FBF700F85184 /* Images.xcassets in Resources */,
 				7F30AC191AC7FBF800F85184 /* Main.storyboard in Resources */,
 			);
@@ -377,17 +358,14 @@
 			files = (
 				7F862C7B1AD5885900968B1D /* ProjectEditViewController.m in Sources */,
 				7F30AC141AC7FBF700F85184 /* ViewController.m in Sources */,
-				7F096E4A1B18D76F00B9AEEC /* MLCalendarCell.m in Sources */,
 				7F609C771AC845EF00807CA6 /* CSVParser.m in Sources */,
 				7F30AC111AC7FBF700F85184 /* main.m in Sources */,
-				7F096E491B18D76F00B9AEEC /* MLCalendarBackground.m in Sources */,
 				7F30AC0F1AC7FBF700F85184 /* AppDelegate.m in Sources */,
 				7F30AC611AC8007700F85184 /* NSString+Hashes.m in Sources */,
 				7F30AC581AC7FE6E00F85184 /* MPUConstants.m in Sources */,
 				7F30AC551AC7FD1700F85184 /* ExportRequest.m in Sources */,
 				7F30AC5C1AC7FE8700F85184 /* NewProjectViewController.m in Sources */,
 				7F30AC481AC7FCC300F85184 /* CHCSVParser.m in Sources */,
-				7F096E4B1B18D76F00B9AEEC /* MLCalendarView.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -439,7 +417,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = "Mac Developer";
 				COPY_PHASE_STRIP = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -480,7 +458,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = "Mac Developer";
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -504,6 +482,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Mac Developer";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -525,6 +504,7 @@
 					"-ObjC",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 			};
 			name = Debug;
 		};
@@ -534,6 +514,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Mac Developer";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -551,6 +532,7 @@
 					"-ObjC",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 			};
 			name = Release;
 		};

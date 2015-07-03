@@ -35,12 +35,32 @@
 @property (strong, nonatomic) NSDate *maxDate;
 @property (weak, nonatomic) ExportRequest *currentExport;
 @property (nonatomic) NSTimeInterval startTime;
+@property (nonatomic) NSUInteger eventTempCount;
+@property (nonatomic) NSUInteger peopleTempCount;
 
 @end
 
 @implementation ViewController
 
 #pragma mark - Lazy Properties
+
+- (NSUInteger)eventTempCount
+{
+    if (!_eventTempCount)
+    {
+        _eventTempCount = 0;
+    }
+    return _eventTempCount;
+}
+
+- (NSUInteger)peopleTempCount
+{
+    if (!_peopleTempCount)
+    {
+        _peopleTempCount = 0;
+    }
+    return _peopleTempCount;
+}
 
 - (NSTimeInterval)startTime
 {
@@ -158,9 +178,6 @@
     
     [[Mixpanel sharedInstance] track:@"Reset Pressed"];
     
-    [self.currentExport cancel];
-    self.currentExport = nil;
-    
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
     
     [appDelegate.connection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
@@ -170,8 +187,14 @@
     
     [self updateCountLabelOfType:@"event" withCount:@0];
     [self updateCountLabelOfType:@"people" withCount:@0];
+    self.eventTempCount = 0;
+    self.peopleTempCount = 0;
     
     [self.progressIndicator stopAnimation:sender];
+}
+- (IBAction)canceRequestPressed:(id)sender {
+    [self.currentExport cancel];
+    self.currentExport = nil;
 }
 
 #pragma mark - NSNotification Methods
@@ -186,6 +209,7 @@
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveExportNotification:) name:kMPExportBegan object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveExportNotification:) name:kMPExportUpdate object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveExportNotification:) name:kMPExportEnd object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveExportNotification:) name:kMPExportCancelled object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveStatusUpdate:) name:kMPStatusUpdate object:nil];
 }
 
@@ -200,14 +224,25 @@
         {
             NSNumber *count = [notification userInfo][kMPUserInfoKeyCount];
             NSString *type = [notification userInfo][kMPUserInfoKeyType];
-            [self updateCountLabelOfType:type withCount:count];
+            NSUInteger startCount = [type isEqualToString:@"event"] ? self.eventTempCount : self.peopleTempCount;
+            [self updateCountLabelOfType:type withCount:@([count integerValue] + startCount)];
+            
+            if ([[notification name] isEqualToString:kMPExportEnd])
+            {
+                if ([type isEqualToString:@"event"])
+                {
+                    self.eventTempCount = [count integerValue] + startCount;
+                } else
+                {
+                    self.peopleTempCount = [count integerValue] + startCount;
+                }
+                self.currentExport = nil;
+                [self.progressIndicator stopAnimation:self];
+            }
         }
+    } else if ([[notification name] isEqualToString:kMPExportCancelled])
+    {
         
-        if ([[notification name] isEqualToString:kMPExportEnd])
-        {
-            self.currentExport = nil;
-            [self.progressIndicator stopAnimation:self];
-        }
     }
 }
 
