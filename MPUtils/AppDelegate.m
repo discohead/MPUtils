@@ -8,7 +8,8 @@
 
 #import "AppDelegate.h"
 #import "MPUConstants.h"
-#import "CSVParser.h"
+#import "CSVWriter.h"
+#import "JSONWriter.h"
 #import "ViewController.h"
 #import <YapDatabase/YapDatabase.h>
 #import <Mixpanel-OSX-Community/Mixpanel.h>
@@ -17,10 +18,16 @@
 
 @property (strong, nonatomic) NSString *basePath;
 @property (strong, nonatomic) NSString *databasePath;
+@property (weak, nonatomic) NSWindow *mainWindow;
 
 @end
 
 @implementation AppDelegate
+
+- (NSWindow *)mainWindow
+{
+    return [[NSApplication sharedApplication] mainWindow];
+}
 
 - (NSString *)basePath {
     
@@ -102,123 +109,178 @@
 
 }
 
-- (void)applicationWillTerminate:(NSNotification *)aNotification {
-    
-}
-
 
 #pragma mark - Export Menu IBActions
 
-- (IBAction)exportEvents:(NSMenuItem *)sender {
-    NSSavePanel *savePanel = [self makeSavePanel];
+- (IBAction)exportEventsRawToCSV:(NSMenuItem *)sender
+{
+    NSSavePanel *savePanel = [self makeSavePanelForFileTypes:@[@"csv",@"CSV"]];
     
-    NSWindow *window = [NSApplication sharedApplication].windows[0];
-    
-    [savePanel beginSheetModalForWindow:window completionHandler:^(NSInteger result) {
+    [savePanel beginSheetModalForWindow:self.mainWindow completionHandler:^(NSInteger result) {
         [savePanel orderOut:nil];
         
         if (result == NSFileHandlingPanelOKButton)
         {
-            CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
-            // Export->Events->Raw
-            if (sender.tag == 0)
-            {
-                Mixpanel *mixpanel = [Mixpanel sharedInstance];
-                [mixpanel.people increment:@{@"Raw Event CSV Exports":@1,@"Total CSV Exports":@1}];
-                [mixpanel registerSuperProperties:@{@"Raw Event CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Raw Event CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
-                [mixpanel registerSuperProperties:@{@"Total CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Total CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
-                
-                dispatch_async(dispatch_queue_create("csv", NULL), ^{
-                    [parser eventsToCSVWithPeopleProperties:NO];
-                });
-                
-            // Export->Events->w/People Props
-            } else if (sender.tag == 1)
-            {
-                dispatch_async(dispatch_queue_create("csv", NULL), ^{
-                    Mixpanel *mixpanel = [Mixpanel sharedInstance];
-                    [mixpanel.people increment:@{@"Combined Event CSV Exports":@1,@"Total CSV Exports":@1}];
-                    [mixpanel registerSuperProperties:@{@"Combined Event CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Combined Event CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
-                    [mixpanel registerSuperProperties:@{@"Total CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Total CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
-                    
-                    [parser eventsToCSVWithPeopleProperties:YES];
-                });
-            }
+            [self exportOfType:kMPExportTypeEventsRaw usingWriter:[[CSVWriter alloc] initForWritingToFile:savePanel.URL.path]];
         }
     }];
-
+    
 }
 
-- (IBAction)exportPeopleProfiles:(NSMenuItem *)sender {
-    NSSavePanel *savePanel = [self makeSavePanel];
+- (IBAction)exportEventsRawToJSON:(NSMenuItem *)sender
+{
+    NSSavePanel *savePanel = [self makeSavePanelForFileTypes:@[@"json",@"JSON"]];
     
-    NSWindow *window = [NSApplication sharedApplication].windows[0];
-    
-    [savePanel beginSheetModalForWindow:window completionHandler:^(NSInteger result) {
+    [savePanel beginSheetModalForWindow:self.mainWindow completionHandler:^(NSInteger result) {
         [savePanel orderOut:nil];
         
-        // Export->People->Profiles
         if (result == NSFileHandlingPanelOKButton)
         {
-            Mixpanel *mixpanel = [Mixpanel sharedInstance];
-            [mixpanel.people increment:@{@"People Profile CSV Exports":@1,@"Total CSV Exports":@1}];
-            [mixpanel registerSuperProperties:@{@"People Profile CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"People Profile CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
-            [mixpanel registerSuperProperties:@{@"Total CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Total CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
-            
-            CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
-            dispatch_async(dispatch_queue_create("csv", NULL), ^{
-                [parser peopleToCSV];
-            });
+            [self exportOfType:kMPExportTypeEventsRaw usingWriter:[[JSONWriter alloc] initForWritingToFile:savePanel.URL.path]];
         }
     }];
 }
 
-- (IBAction)exportTransactions:(NSMenuItem *)sender {
-    NSSavePanel *savePanel = [self makeSavePanel];
+- (IBAction)exportEventsCombinedToCSV:(NSMenuItem *)sender
+{
+    NSSavePanel *savePanel = [self makeSavePanelForFileTypes:@[@"csv",@"CSV"]];
     
-    NSWindow *window = [NSApplication sharedApplication].windows[0];
-    
-    [savePanel beginSheetModalForWindow:window completionHandler:^(NSInteger result) {
+    [savePanel beginSheetModalForWindow:self.mainWindow completionHandler:^(NSInteger result) {
         [savePanel orderOut:nil];
         
-        // Export->People->Transactions
         if (result == NSFileHandlingPanelOKButton)
         {
-            Mixpanel *mixpanel = [Mixpanel sharedInstance];
-            [mixpanel.people increment:@{@"Transactions CSV Exports":@1,@"Total CSV Exports":@1}];
-            [mixpanel registerSuperProperties:@{@"Transactions CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Transactions CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
-            [mixpanel registerSuperProperties:@{@"Total CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Total CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
-            
-            CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
-            dispatch_async(dispatch_queue_create("csv", NULL), ^{
-                [parser transactionsToCSV];
-            });
+            [self exportOfType:kMPExportTypeEventsCombined usingWriter:[[CSVWriter alloc] initForWritingToFile:savePanel.URL.path]];
         }
     }];
 }
 
-- (IBAction)exportPeopleFromEvents:(NSMenuItem *)sender {
-    NSSavePanel *savePanel = [self makeSavePanel];
+- (IBAction)exportEventsCombinedToJSON:(NSMenuItem *)sender
+{
+    NSSavePanel *savePanel = [self makeSavePanelForFileTypes:@[@"json",@"JSON"]];
     
-    NSWindow *window = [NSApplication sharedApplication].windows[0];
-    
-    [savePanel beginSheetModalForWindow:window completionHandler:^(NSInteger result) {
+    [savePanel beginSheetModalForWindow:self.mainWindow completionHandler:^(NSInteger result) {
         [savePanel orderOut:nil];
         
-        // Export->People->From Events
         if (result == NSFileHandlingPanelOKButton)
         {
-            Mixpanel *mixpanel = [Mixpanel sharedInstance];
-            [mixpanel.people increment:@{@"People From Events CSV Exports":@1,@"Total CSV Exports":@1}];
-            [mixpanel registerSuperProperties:@{@"People From Events CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"People From Events CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
-            [mixpanel registerSuperProperties:@{@"Total CSV Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Total CSV Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
-            
-            CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
-            dispatch_async(dispatch_queue_create("csv", NULL), ^{
-                [parser peopleFromEventsToCSV];
-            });
+            [self exportOfType:kMPExportTypeEventsCombined usingWriter:[[JSONWriter alloc] initForWritingToFile:savePanel.URL.path]];
         }
     }];
+}
+
+- (IBAction)exportPeopleProfilesToCSV:(NSMenuItem *)sender
+{
+    NSSavePanel *savePanel = [self makeSavePanelForFileTypes:@[@"csv",@"CSV"]];
+    
+    [savePanel beginSheetModalForWindow:self.mainWindow completionHandler:^(NSInteger result) {
+        [savePanel orderOut:nil];
+        
+        if (result == NSFileHandlingPanelOKButton)
+        {
+            [self exportOfType:kMPExportTypePeopleProfiles usingWriter:[[CSVWriter alloc] initForWritingToFile:savePanel.URL.path]];
+        }
+    }];
+}
+
+- (IBAction)exportPeopleProfilesToJSON:(NSMenuItem *)sender
+{
+    NSSavePanel *savePanel = [self makeSavePanelForFileTypes:@[@"json",@"JSON"]];
+    
+    [savePanel beginSheetModalForWindow:self.mainWindow completionHandler:^(NSInteger result) {
+        [savePanel orderOut:nil];
+        
+        if (result == NSFileHandlingPanelOKButton)
+        {
+            [self exportOfType:kMPExportTypePeopleProfiles usingWriter:[[JSONWriter alloc] initForWritingToFile:savePanel.URL.path]];
+        }
+    }];
+}
+
+- (IBAction)exportPeopleFromEventsToCSV:(NSMenuItem *)sender
+{
+    NSSavePanel *savePanel = [self makeSavePanelForFileTypes:@[@"csv",@"CSV"]];
+    
+    [savePanel beginSheetModalForWindow:self.mainWindow completionHandler:^(NSInteger result) {
+        [savePanel orderOut:nil];
+        
+        if (result == NSFileHandlingPanelOKButton)
+        {
+            [self exportOfType:kMPExportTypePeopleFromEvents usingWriter:[[CSVWriter alloc] initForWritingToFile:savePanel.URL.path]];
+        }
+    }];
+}
+
+- (IBAction)exportPeopleFromEventsToJSON:(NSMenuItem *)sender
+{
+    NSSavePanel *savePanel = [self makeSavePanelForFileTypes:@[@"json",@"JSON"]];
+    
+    [savePanel beginSheetModalForWindow:self.mainWindow completionHandler:^(NSInteger result) {
+        [savePanel orderOut:nil];
+        
+        if (result == NSFileHandlingPanelOKButton)
+        {
+            [self exportOfType:kMPExportTypePeopleFromEvents usingWriter:[[JSONWriter alloc] initForWritingToFile:savePanel.URL.path]];
+        }
+    }];
+}
+
+- (IBAction)exportTransactionsToCSV:(NSMenuItem *)sender
+{
+    NSSavePanel *savePanel = [self makeSavePanelForFileTypes:@[@"csv",@"CSV"]];
+    
+    [savePanel beginSheetModalForWindow:self.mainWindow completionHandler:^(NSInteger result) {
+        [savePanel orderOut:nil];
+        
+        if (result == NSFileHandlingPanelOKButton)
+        {
+            [self exportOfType:kMPExportTypeTransactions usingWriter:[[CSVWriter alloc] initForWritingToFile:savePanel.URL.path]];
+        }
+    }];
+}
+
+- (void)exportOfType:(NSString *)exportType usingWriter:(id)writer
+{
+    NSString *format = [NSString string];
+    dispatch_queue_t exportQueue = dispatch_queue_create("export", NULL);
+    
+    if ([writer isKindOfClass:[CSVWriter class]])
+    {
+        writer = (CSVWriter *)writer;
+        format = @"CSV";
+        
+    } else if ([writer isKindOfClass:[JSONWriter class]])
+    {
+        writer = (JSONWriter *)writer;
+        format = @"JSON";
+    }
+    
+    void (^exportBlock)() = ^void() {};
+    
+    if ([exportType isEqualToString:kMPExportTypeEventsRaw])
+    {
+        exportBlock = ^void() {[writer eventsWithPeopleProperties:NO];};
+
+    } else if ([exportType isEqualToString:kMPExportTypeEventsCombined])
+    {
+        exportBlock = ^void() {[writer eventsWithPeopleProperties:YES];};
+        
+    } else if ([exportType isEqualToString:kMPExportTypePeopleProfiles])
+    {
+        exportBlock = ^void() {[writer peopleProfiles];};
+        
+    } else if ([exportType isEqualToString:kMPExportTypePeopleFromEvents])
+    {
+        exportBlock = ^void() {[writer peopleFromEvents];};
+        
+    } else if ([exportType isEqualToString:kMPExportTypeTransactions])
+    {
+        exportBlock = ^void() {[writer transactions];};
+    }
+    
+    dispatch_async(exportQueue, exportBlock);
+    
+    [self incrementMixpanelPropertiesForExportofType:exportType andFormat:format];
 }
 
 - (IBAction)launchExportURLinBrowser:(id)sender
@@ -239,16 +301,27 @@
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPStatusUpdate object:nil userInfo:statusInfo];
 }
 
-- (NSSavePanel *)makeSavePanel
+- (NSSavePanel *)makeSavePanelForFileTypes:(NSArray *)fileTypes;
 {
     NSSavePanel *savePanel = [NSSavePanel savePanel];
     savePanel.canCreateDirectories = YES;
     savePanel.delegate = self;
-    savePanel.allowedFileTypes = @[@"csv",@"CSV"];
+    savePanel.allowedFileTypes = fileTypes;
     savePanel.directoryURL = [NSURL URLWithString:self.basePath];
     
     return savePanel;
 }
 
-
+- (void)incrementMixpanelPropertiesForExportofType:(NSString *)exportType andFormat:(NSString *)format
+{
+    Mixpanel *mixpanel = [Mixpanel sharedInstance];
+    NSString *specificCount = [NSString stringWithFormat:@"%@ %@ Exports", exportType, format];
+    NSString *formatCount = [NSString stringWithFormat:@"Total %@ Exports", format];
+    NSString *typeCount = [NSString stringWithFormat:@"Total %@ Exports", exportType];
+    [mixpanel.people increment:@{specificCount:@1,formatCount:@1,typeCount:@1, @"Total Exports":@1}];
+    [mixpanel registerSuperProperties:@{specificCount:@([[[[mixpanel currentSuperProperties] objectsForKeys:@[specificCount] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1),
+                                        formatCount:@([[[[mixpanel currentSuperProperties] objectsForKeys:@[formatCount] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1),
+                                        typeCount:@([[[[mixpanel currentSuperProperties] objectsForKeys:@[typeCount] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1),
+                                        @"Total Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Total Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
+}
 @end

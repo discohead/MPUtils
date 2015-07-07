@@ -1,5 +1,5 @@
 //
-//  CSVParser.h
+//  CSVWriter.h
 //  MPUtils
 //
 //  Created by Jared McFarland on 3/29/15.
@@ -8,12 +8,12 @@
 
 #import <Foundation/Foundation.h>
 
-@interface CSVParser : NSObject
+@interface CSVWriter : NSObject
 
 - (instancetype)initForWritingToFile:(NSString *)filePath;
-- (void)eventsToCSVWithPeopleProperties:(BOOL)peopleProperties;
-- (void)peopleToCSV;
-- (void)transactionsToCSV;
-- (void)peopleFromEventsToCSV;
+- (void)eventsWithPeopleProperties:(BOOL)peopleProperties;
+- (void)peopleProfiles;
+- (void)transactions;
+- (void)peopleFromEvents;
 
 @end

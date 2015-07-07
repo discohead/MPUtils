@@ -57,6 +57,14 @@ extern NSString *const kMPUserDefaultsEventsKey;
 extern NSString *const kMPUserDefaultsFromDateKey;
 extern NSString *const kMPUserDefaultsToDateKey;
 
+#pragma mark - File Export Types
+
+extern NSString *const kMPExportTypeEventsRaw;
+extern NSString *const kMPExportTypeEventsCombined;
+extern NSString *const kMPExportTypePeopleProfiles;
+extern NSString *const kMPExportTypePeopleFromEvents;
+extern NSString *const kMPExportTypeTransactions;
+
 #pragma mark - NSNotificationCenter
 
 extern NSString *const kMPCSVWritingBegan;

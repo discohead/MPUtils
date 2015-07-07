@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="7706" systemVersion="14D136" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" initialViewController="B8D-0N-5wS">
+<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="7706" systemVersion="14E46" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" initialViewController="B8D-0N-5wS">
     <dependencies>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="7706"/>
     </dependencies>
@@ -294,41 +294,93 @@
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <menu key="submenu" title="Export" id="GEO-Iw-cKr">
                                     <items>
-                                        <menuItem title="Events" id="Gi5-1S-RQB">
+                                        <menuItem title="CSV" id="eDj-YE-q6e">
                                             <modifierMask key="keyEquivalentModifierMask"/>
-                                            <menu key="submenu" title="Events" systemMenu="font" id="aXa-aM-Jaq">
+                                            <menu key="submenu" id="TWJ-x0-rZ8">
                                                 <items>
-                                                    <menuItem title="Raw" keyEquivalent="E" id="Q5e-8K-NDq">
-                                                        <connections>
-                                                            <action selector="exportEvents:" target="Voe-Tx-rLC" id="ll7-IZ-L76"/>
-                                                        </connections>
+                                                    <menuItem title="Events" id="Gi5-1S-RQB">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <menu key="submenu" title="Events" systemMenu="font" id="aXa-aM-Jaq">
+                                                            <items>
+                                                                <menuItem title="Raw" keyEquivalent="E" id="Q5e-8K-NDq">
+                                                                    <connections>
+                                                                        <action selector="exportEventsRawToCSV:" target="Voe-Tx-rLC" id="LnJ-fR-H4W"/>
+                                                                    </connections>
+                                                                </menuItem>
+                                                                <menuItem title="w/ People Props" tag="1" keyEquivalent="C" id="GB9-OM-e27">
+                                                                    <connections>
+                                                                        <action selector="exportEventsCombinedToCSV:" target="Voe-Tx-rLC" id="Hfb-jq-vRv"/>
+                                                                    </connections>
+                                                                </menuItem>
+                                                            </items>
+                                                        </menu>
                                                     </menuItem>
-                                                    <menuItem title="w/ People Props" tag="1" keyEquivalent="C" id="GB9-OM-e27">
-                                                        <connections>
-                                                            <action selector="exportEvents:" target="Voe-Tx-rLC" id="g8m-33-ID1"/>
-                                                        </connections>
+                                                    <menuItem title="People" id="Fal-I4-PZk">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <menu key="submenu" title="People" id="d9c-me-L2H">
+                                                            <items>
+                                                                <menuItem title="Profiles" keyEquivalent="P" id="ZM1-6Q-yy1">
+                                                                    <connections>
+                                                                        <action selector="exportPeopleProfilesToCSV:" target="Voe-Tx-rLC" id="U8c-mj-hSe"/>
+                                                                    </connections>
+                                                                </menuItem>
+                                                                <menuItem title="Transactions" keyEquivalent="T" id="VIY-Ag-zcb">
+                                                                    <connections>
+                                                                        <action selector="exportTransactionsToCSV:" target="Voe-Tx-rLC" id="2Io-ZM-Qrz"/>
+                                                                    </connections>
+                                                                </menuItem>
+                                                                <menuItem title="From Events" keyEquivalent="X" id="o9z-8f-U9N">
+                                                                    <connections>
+                                                                        <action selector="exportPeopleFromEventsToCSV:" target="Voe-Tx-rLC" id="3SB-WY-Mjp"/>
+                                                                    </connections>
+                                                                </menuItem>
+                                                            </items>
+                                                        </menu>
                                                     </menuItem>
                                                 </items>
                                             </menu>
                                         </menuItem>
-                                        <menuItem title="People" id="Fal-I4-PZk">
+                                        <menuItem title="JSON" id="omu-kp-hAd">
                                             <modifierMask key="keyEquivalentModifierMask"/>
-                                            <menu key="submenu" title="People" id="d9c-me-L2H">
+                                            <menu key="submenu" id="Qq6-VJ-dJF">
                                                 <items>
-                                                    <menuItem title="Profiles" keyEquivalent="P" id="ZM1-6Q-yy1">
-                                                        <connections>
-                                                            <action selector="exportPeopleProfiles:" target="Voe-Tx-rLC" id="R1c-9B-biX"/>
-                                                        </connections>
+                                                    <menuItem title="Events" id="GJL-Vz-LRU">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <menu key="submenu" id="qsM-2Z-IR1">
+                                                            <items>
+                                                                <menuItem title="Raw" tag="2" id="nr2-eS-rAb">
+                                                                    <modifierMask key="keyEquivalentModifierMask"/>
+                                                                    <connections>
+                                                                        <action selector="exportEventsRawToJSON:" target="Voe-Tx-rLC" id="7d8-0f-8K5"/>
+                                                                    </connections>
+                                                                </menuItem>
+                                                                <menuItem title="w/ People Props" tag="3" id="O3d-Uj-WRq">
+                                                                    <modifierMask key="keyEquivalentModifierMask"/>
+                                                                    <connections>
+                                                                        <action selector="exportEventsCombinedToJSON:" target="Voe-Tx-rLC" id="EJU-G8-9Z1"/>
+                                                                    </connections>
+                                                                </menuItem>
+                                                            </items>
+                                                        </menu>
                                                     </menuItem>
-                                                    <menuItem title="Transactions" keyEquivalent="T" id="VIY-Ag-zcb">
-                                                        <connections>
-                                                            <action selector="exportTransactions:" target="Voe-Tx-rLC" id="1IZ-WM-JBO"/>
-                                                        </connections>
-                                                    </menuItem>
-                                                    <menuItem title="From Events" keyEquivalent="X" id="o9z-8f-U9N">
-                                                        <connections>
-                                                            <action selector="exportPeopleFromEvents:" target="Voe-Tx-rLC" id="izJ-ci-MiQ"/>
-                                                        </connections>
+                                                    <menuItem title="People" id="u82-dI-Ige">
+                                                        <modifierMask key="keyEquivalentModifierMask"/>
+                                                        <menu key="submenu" id="E3G-Op-opu">
+                                                            <items>
+                                                                <menuItem title="Profiles" tag="1" id="be7-5D-aIE">
+                                                                    <modifierMask key="keyEquivalentModifierMask"/>
+                                                                    <connections>
+                                                                        <action selector="exportPeopleProfilesToJSON:" target="Voe-Tx-rLC" id="B3p-Am-7dz"/>
+                                                                    </connections>
+                                                                </menuItem>
+                                                                <menuItem title="From Events" tag="1" id="XWi-7B-Q6u">
+                                                                    <modifierMask key="keyEquivalentModifierMask"/>
+                                                                    <connections>
+                                                                        <action selector="exportPeopleFromEventsToJSON:" target="Voe-Tx-rLC" id="pUM-Or-i5p"/>
+                                                                    </connections>
+                                                                </menuItem>
+                                                            </items>
+                                                        </menu>
                                                     </menuItem>
                                                 </items>
                                             </menu>

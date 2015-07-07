@@ -1,25 +1,25 @@
 //
-//  CSVParser.m
+//  CSVWriter.m
 //  MPUtils
 //
 //  Created by Jared McFarland on 3/29/15.
 //  Copyright (c) 2015 Jared McFarland. All rights reserved.
 //
 
-#import "CSVParser.h"
+#import "CSVWriter.h"
 #import "CHCSVParser.h"
 #import "AppDelegate.h"
 #import "MPUConstants.h"
 #import <YapDatabase/YapDatabase.h>
 
-@interface CSVParser ()
+@interface CSVWriter ()
 
 @property (strong, nonatomic) CHCSVWriter *writer;
 @property (strong, nonatomic) YapDatabaseConnection *concurrentConnection;
 
 @end
 
-@implementation CSVParser
+@implementation CSVWriter
 
 - (YapDatabaseConnection *)concurrentConnection
 {
@@ -36,17 +36,17 @@
 - (instancetype)initForWritingToFile:(NSString *)filePath
 {
     [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"CSV writer path = %@",[[NSURL fileURLWithPath:filePath] absoluteString]] attributes:@{NSForegroundColorAttributeName:[NSColor darkGrayColor]}]];
-    CSVParser *parser = [[CSVParser alloc] init];
+    CSVWriter *parser = [[CSVWriter alloc] init];
     parser.writer = [[CHCSVWriter alloc] initForWritingToCSVFile:filePath];
     return parser;
 }
 
 #pragma mark - Main Writing Methods
 
-- (void)eventsToCSVWithPeopleProperties:(BOOL)peopleProperties
+- (void)eventsWithPeopleProperties:(BOOL)peopleProperties
 {
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingBegan object:nil];
-    __weak CSVParser *weakSelf = self;
+    __weak CSVWriter *weakSelf = self;
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
     __block NSArray *eventProps = [NSArray array];
     __block NSArray *peopleProps = [NSArray array];
@@ -91,10 +91,10 @@
 }
 
 
-- (void)peopleToCSV
+- (void)peopleProfiles
 {
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingBegan object:nil];
-    __weak CSVParser *weakSelf = self;
+    __weak CSVWriter *weakSelf = self;
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
     __block int rows = 0;
     
@@ -119,7 +119,7 @@
 
 - (void)writePeoplePropertiesForEvent:(NSDictionary *)event withProperties:(NSArray *)peopleProperties usingTransaction:(YapDatabaseReadTransaction *)transaction
 {
-    __weak CSVParser *weakSelf = self;
+    __weak CSVWriter *weakSelf = self;
     
     if (event[@"properties"][@"distinct_id"])
     {
@@ -143,7 +143,7 @@
 
 - (void)writeEvent:(NSDictionary *)event withProperties:(NSArray *)properties
 {
-    __weak CSVParser *weakSelf = self;
+    __weak CSVWriter *weakSelf = self;
     [weakSelf.writer writeField:event[@"event"]];
     for (NSString *eventProp in properties)
     {
@@ -177,7 +177,7 @@
 
 - (void)writeProfile:(NSDictionary *)profile withProperties:(NSArray *)properties
 {
-    __weak CSVParser *weakSelf = self;
+    __weak CSVWriter *weakSelf = self;
     [weakSelf.writer writeField:profile[@"$distinct_id"]];
     
     for (NSString *peopleProp in properties)
@@ -193,10 +193,10 @@
     
     [weakSelf.writer finishLine];
 }
-- (void)transactionsToCSV
+- (void)transactions
 {
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingBegan object:nil];
-    __weak CSVParser *weakSelf = self;
+    __weak CSVWriter *weakSelf = self;
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
     __block int rows = 0;
     
@@ -235,12 +235,12 @@
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil userInfo:@{@"Type":@"People",@"Sub-Type":@"Transcations",@"Rows":@(rows)}];
 }
 
-- (void)peopleFromEventsToCSV
+- (void)peopleFromEvents
 {
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingBegan object:nil];
     
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
-    __weak CSVParser *weakSelf = self;
+    __weak CSVWriter *weakSelf = self;
     __block NSMutableSet *distinctIDs = [NSMutableSet set];
     __block NSArray *properties = [NSArray array];
     __block int rows = 0;

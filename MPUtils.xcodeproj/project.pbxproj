@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7F087F071B46EF130044A9B9 /* JSONWriter.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F087F061B46EF130044A9B9 /* JSONWriter.m */; };
 		7F30AC0F1AC7FBF700F85184 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC0E1AC7FBF700F85184 /* AppDelegate.m */; };
 		7F30AC111AC7FBF700F85184 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC101AC7FBF700F85184 /* main.m */; };
 		7F30AC141AC7FBF700F85184 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC131AC7FBF700F85184 /* ViewController.m */; };
@@ -18,7 +19,7 @@
 		7F30AC581AC7FE6E00F85184 /* MPUConstants.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC571AC7FE6E00F85184 /* MPUConstants.m */; };
 		7F30AC5C1AC7FE8700F85184 /* NewProjectViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */; };
 		7F30AC611AC8007700F85184 /* NSString+Hashes.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC601AC8007700F85184 /* NSString+Hashes.m */; };
-		7F609C771AC845EF00807CA6 /* CSVParser.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F609C761AC845EF00807CA6 /* CSVParser.m */; };
+		7F609C771AC845EF00807CA6 /* CSVWriter.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F609C761AC845EF00807CA6 /* CSVWriter.m */; };
 		7F862C7B1AD5885900968B1D /* ProjectEditViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F862C7A1AD5885900968B1D /* ProjectEditViewController.m */; };
 		C9A3A1D447FF071B1253AD8A /* libPods.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2520AD2E8E9D3B7257C95380 /* libPods.a */; };
 /* End PBXBuildFile section */
@@ -48,6 +49,8 @@
 
 /* Begin PBXFileReference section */
 		2520AD2E8E9D3B7257C95380 /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		7F087F051B46EF130044A9B9 /* JSONWriter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JSONWriter.h; sourceTree = "<group>"; };
+		7F087F061B46EF130044A9B9 /* JSONWriter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JSONWriter.m; sourceTree = "<group>"; };
 		7F30AC081AC7FBF700F85184 /* MPUtils.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MPUtils.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7F30AC0C1AC7FBF700F85184 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		7F30AC0D1AC7FBF700F85184 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -70,8 +73,8 @@
 		7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = NewProjectViewController.m; path = View/NewProjectViewController.m; sourceTree = "<group>"; };
 		7F30AC5F1AC8007700F85184 /* NSString+Hashes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Hashes.h"; sourceTree = "<group>"; };
 		7F30AC601AC8007700F85184 /* NSString+Hashes.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Hashes.m"; sourceTree = "<group>"; };
-		7F609C751AC845EF00807CA6 /* CSVParser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CSVParser.h; sourceTree = "<group>"; };
-		7F609C761AC845EF00807CA6 /* CSVParser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CSVParser.m; sourceTree = "<group>"; };
+		7F609C751AC845EF00807CA6 /* CSVWriter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CSVWriter.h; sourceTree = "<group>"; };
+		7F609C761AC845EF00807CA6 /* CSVWriter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CSVWriter.m; sourceTree = "<group>"; };
 		7F862C791AD5885900968B1D /* ProjectEditViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ProjectEditViewController.h; path = View/ProjectEditViewController.h; sourceTree = "<group>"; };
 		7F862C7A1AD5885900968B1D /* ProjectEditViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = ProjectEditViewController.m; path = View/ProjectEditViewController.m; sourceTree = "<group>"; };
 		C40F948E161298748CCD40DE /* Pods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.debug.xcconfig; path = "Pods/Target Support Files/Pods/Pods.debug.xcconfig"; sourceTree = "<group>"; };
@@ -139,8 +142,10 @@
 				7F30AC0E1AC7FBF700F85184 /* AppDelegate.m */,
 				7F30AC531AC7FD1700F85184 /* ExportRequest.h */,
 				7F30AC541AC7FD1700F85184 /* ExportRequest.m */,
-				7F609C751AC845EF00807CA6 /* CSVParser.h */,
-				7F609C761AC845EF00807CA6 /* CSVParser.m */,
+				7F609C751AC845EF00807CA6 /* CSVWriter.h */,
+				7F609C761AC845EF00807CA6 /* CSVWriter.m */,
+				7F087F051B46EF130044A9B9 /* JSONWriter.h */,
+				7F087F061B46EF130044A9B9 /* JSONWriter.m */,
 				7F087F041B46ECF50044A9B9 /* Controllers */,
 				7F30AC591AC7FE8700F85184 /* View */,
 				7F30AC151AC7FBF700F85184 /* Images.xcassets */,
@@ -358,10 +363,11 @@
 			files = (
 				7F862C7B1AD5885900968B1D /* ProjectEditViewController.m in Sources */,
 				7F30AC141AC7FBF700F85184 /* ViewController.m in Sources */,
-				7F609C771AC845EF00807CA6 /* CSVParser.m in Sources */,
+				7F609C771AC845EF00807CA6 /* CSVWriter.m in Sources */,
 				7F30AC111AC7FBF700F85184 /* main.m in Sources */,
 				7F30AC0F1AC7FBF700F85184 /* AppDelegate.m in Sources */,
 				7F30AC611AC8007700F85184 /* NSString+Hashes.m in Sources */,
+				7F087F071B46EF130044A9B9 /* JSONWriter.m in Sources */,
 				7F30AC581AC7FE6E00F85184 /* MPUConstants.m in Sources */,
 				7F30AC551AC7FD1700F85184 /* ExportRequest.m in Sources */,
 				7F30AC5C1AC7FE8700F85184 /* NewProjectViewController.m in Sources */,

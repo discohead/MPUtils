@@ -57,6 +57,14 @@ NSString *const kMPUserDefaultsEventsKey           = @"EventsKey";
 NSString *const kMPUserDefaultsFromDateKey         = @"FromDateKey";
 NSString *const kMPUserDefaultsToDateKey           = @"ToDateKey";
 
+#pragma mark - File Export Types
+
+NSString *const kMPExportTypeEventsRaw        = @"Raw Events";
+NSString *const kMPExportTypeEventsCombined   = @"Combined Events";
+NSString *const kMPExportTypePeopleProfiles   = @"People Profiles";
+NSString *const kMPExportTypePeopleFromEvents = @"People from Events";
+NSString *const kMPExportTypeTransactions     = @"Transactions";
+
 #pragma mark - NSNotificationCenter
 
 NSString *const kMPCSVWritingBegan   = @"CSVWritingBegan";
