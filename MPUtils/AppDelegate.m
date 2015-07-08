@@ -95,6 +95,7 @@
     }];
     [self updateStatusWithString:[[NSAttributedString alloc] initWithString:@"Database Initialized!" attributes:@{NSForegroundColorAttributeName:[NSColor grayColor]}]];
     
+    // Do some Mixpanel stuff
     Mixpanel *mixpanel = [Mixpanel sharedInstanceWithToken:@"412b93fb1e3b8204fedf7cdc22d2b570"];
     [mixpanel flush];
     mixpanel.flushInterval = 30.0;
@@ -282,6 +283,8 @@
     
     [self incrementMixpanelPropertiesForExportofType:exportType andFormat:format];
 }
+
+// Help menu IBAction
 
 - (IBAction)launchExportURLinBrowser:(id)sender
 {

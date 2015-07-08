@@ -35,7 +35,7 @@
 
 - (instancetype)initForWritingToFile:(NSString *)filePath
 {
-    [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"CSV writer path = %@",[[NSURL fileURLWithPath:filePath] absoluteString]] attributes:@{NSForegroundColorAttributeName:[NSColor darkGrayColor]}]];
+    [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"CSV file path = %@",[[NSURL fileURLWithPath:filePath] absoluteString]] attributes:@{NSForegroundColorAttributeName:[NSColor darkGrayColor]}]];
     CSVWriter *parser = [[CSVWriter alloc] init];
     parser.writer = [[CHCSVWriter alloc] initForWritingToCSVFile:filePath];
     return parser;
@@ -45,7 +45,7 @@
 
 - (void)eventsWithPeopleProperties:(BOOL)peopleProperties
 {
-    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingBegan object:nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingBegan object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatCSV}];
     __weak CSVWriter *weakSelf = self;
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
     __block NSArray *eventProps = [NSArray array];
@@ -86,14 +86,14 @@
             rows++;
         }];
     }];
-    NSString *subType = peopleProperties ? @"Combined" : @"Raw";
-    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil userInfo:@{@"Type":@"Events",@"Sub-Type":subType, @"Rows":@(rows)}];
+    NSString *subType = peopleProperties ? kMPExportTypeEventsCombined : kMPExportTypeEventsRaw;
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingEnded object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatCSV, kMPFileWritingExportObjectKey:kMPExportObjectEvents,kMPFileWritingExportTypeKey:subType, kMPFileWritingCount:@(rows)}];
 }
 
 
 - (void)peopleProfiles
 {
-    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingBegan object:nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingBegan object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatCSV}];
     __weak CSVWriter *weakSelf = self;
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
     __block int rows = 0;
@@ -113,7 +113,7 @@
         }];
     }];
     
-    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil userInfo:@{@"Type":@"People",@"Sub-Type":@"Profiles",@"Rows":@(rows)}];
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingEnded object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatCSV, kMPFileWritingExportObjectKey:kMPExportObjectPeople,kMPFileWritingExportTypeKey:kMPExportTypePeopleProfiles,kMPFileWritingCount:@(rows)}];
     
 }
 
@@ -195,7 +195,7 @@
 }
 - (void)transactions
 {
-    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingBegan object:nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingBegan object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatCSV}];
     __weak CSVWriter *weakSelf = self;
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
     __block int rows = 0;
@@ -232,12 +232,12 @@
         }];
     }];
     
-    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil userInfo:@{@"Type":@"People",@"Sub-Type":@"Transcations",@"Rows":@(rows)}];
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingEnded object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatCSV, kMPFileWritingExportObjectKey:kMPExportObjectTransactions,kMPFileWritingExportTypeKey:kMPExportTypeTransactions,kMPFileWritingCount:@(rows)}];
 }
 
 - (void)peopleFromEvents
 {
-    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingBegan object:nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingBegan object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatCSV}];
     
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
     __weak CSVWriter *weakSelf = self;
@@ -283,7 +283,7 @@
         }
     }];
     
-    [[NSNotificationCenter defaultCenter] postNotificationName:kMPCSVWritingEnded object:nil userInfo:@{@"Type":@"People",@"Sub-Type":@"From Events",@"Rows":@(rows)}];
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingEnded object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatCSV,kMPFileWritingExportObjectKey:kMPExportObjectPeople,kMPFileWritingExportTypeKey:kMPExportTypePeopleFromEvents,kMPFileWritingCount:@(rows)}];
 }
 
 #pragma mark - Utility Methods

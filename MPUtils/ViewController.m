@@ -204,8 +204,8 @@
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(editingDidEnd:)
                                                  name:NSControlTextDidEndEditingNotification object:nil];
     
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveCSVNotification:) name:kMPCSVWritingBegan object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveCSVNotification:) name:kMPCSVWritingEnded object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveFileWritingNotification:) name:kMPFileWritingBegan object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveFileWritingNotification:) name:kMPFileWritingEnded object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveExportNotification:) name:kMPExportBegan object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveExportNotification:) name:kMPExportUpdate object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveExportNotification:) name:kMPExportEnd object:nil];
@@ -246,21 +246,22 @@
     }
 }
 
-- (void)receiveCSVNotification:(NSNotification *)notification
+- (void)receiveFileWritingNotification:(NSNotification *)notification
 {
-    if ([[notification name] isEqualToString:kMPCSVWritingBegan])
+    NSString *format = [[notification userInfo] objectForKey:kMPFileWritingFormatKey];
+    if ([[notification name] isEqualToString:kMPFileWritingBegan])
     {
         self.startTime = [[NSDate date] timeIntervalSince1970];
         [self.progressIndicator startAnimation:self];
-        [self appendToStatusLog:[[NSAttributedString alloc] initWithString:@"CSV Export Began" attributes:@{NSForegroundColorAttributeName:[NSColor magentaColor]}]];
-    } else if ([[notification name] isEqualToString:kMPCSVWritingEnded])
+        [self appendToStatusLog:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@ export began",format] attributes:@{NSForegroundColorAttributeName:[NSColor magentaColor]}]];
+    } else if ([[notification name] isEqualToString:kMPFileWritingEnded])
     {
-        NSString *type = [notification userInfo][@"Type"];
-        NSString *subType = [notification userInfo][@"Sub-Type"];
-        NSNumber *rows = [notification userInfo][@"Rows"];
-        [[Mixpanel sharedInstance] track:@"CSV Export " properties:@{@"$duration":@([[NSDate date] timeIntervalSince1970] - self.startTime),@"Type":type,@"Sub-Type":subType,@"Rows":rows}];
+        NSString *exportObject = [[notification userInfo] objectForKey:kMPFileWritingExportObjectKey];
+        NSString *exportType = [[notification userInfo] objectForKey:kMPFileWritingExportTypeKey];
+        NSNumber *rows = [[notification userInfo] objectForKey:kMPFileWritingCount];
+        [[Mixpanel sharedInstance] track:@"File Export" properties:@{@"$duration":@([[NSDate date] timeIntervalSince1970] - self.startTime),@"Object":exportObject,@"Type":exportType,@"Rows":rows}];
         [self.progressIndicator stopAnimation:self];
-        [self appendToStatusLog:[[NSAttributedString alloc] initWithString:@"CSV Export Ended" attributes:@{NSForegroundColorAttributeName:[NSColor magentaColor]}]];
+        [self appendToStatusLog:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@ export ended - %@ %@ exported",format,rows,exportObject] attributes:@{NSForegroundColorAttributeName:[NSColor magentaColor]}]];
     }
 }
 

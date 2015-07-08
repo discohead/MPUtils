@@ -59,6 +59,11 @@ NSString *const kMPUserDefaultsToDateKey           = @"ToDateKey";
 
 #pragma mark - File Export Types
 
+NSString *const kMPExportObjectEvents         = @"Events";
+NSString *const kMPExportObjectPeople         = @"People";
+NSString *const kMPExportObjectTransactions   = @"Transactions";
+NSString *const kMPExportFormatCSV            = @"CSV";
+NSString *const kMPExportFormatJSON           = @"JSON";
 NSString *const kMPExportTypeEventsRaw        = @"Raw Events";
 NSString *const kMPExportTypeEventsCombined   = @"Combined Events";
 NSString *const kMPExportTypePeopleProfiles   = @"People Profiles";
@@ -67,16 +72,20 @@ NSString *const kMPExportTypeTransactions     = @"Transactions";
 
 #pragma mark - NSNotificationCenter
 
-NSString *const kMPCSVWritingBegan   = @"CSVWritingBegan";
-NSString *const kMPCSVWritingEnded   = @"CSVWritingEnded";
-NSString *const kMPExportBegan       = @"ExportBegan";
-NSString *const kMPExportUpdate      = @"ExportUpdate";
-NSString *const kMPExportEnd         = @"ExportEnd";
-NSString *const kMPExportCancelled   = @"ExportCancelled";
-NSString *const kMPUserInfoKeyCount  = @"UserInfoKeyCount";
-NSString *const kMPUserInfoKeyType   = @"UserInfoKeyType";
-NSString *const kMPStatusUpdate      = @"StatusUpdate";
-NSString *const kMPUserInfoKeyStatus = @"UserInfoKeyStatus";
+NSString *const kMPFileWritingBegan         = @"FileWritingBegan";
+NSString *const kMPFileWritingEnded         = @"FileWritingEnded";
+NSString *const kMPFileWritingExportObjectKey    = @"FileWritingExportType";
+NSString *const kMPFileWritingExportTypeKey = @"FileWritingExportSubType";
+NSString *const kMPFileWritingFormatKey        = @"FileWritingFormat";
+NSString *const kMPFileWritingCount         = @"FileWritingCount";
+NSString *const kMPExportBegan              = @"ExportBegan";
+NSString *const kMPExportUpdate             = @"ExportUpdate";
+NSString *const kMPExportEnd                = @"ExportEnd";
+NSString *const kMPExportCancelled          = @"ExportCancelled";
+NSString *const kMPUserInfoKeyCount         = @"UserInfoKeyCount";
+NSString *const kMPUserInfoKeyType          = @"UserInfoKeyType";
+NSString *const kMPStatusUpdate             = @"StatusUpdate";
+NSString *const kMPUserInfoKeyStatus        = @"UserInfoKeyStatus";
 
 #pragma mark - YapDatabase
 

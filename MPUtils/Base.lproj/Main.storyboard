@@ -348,14 +348,14 @@
                                                         <modifierMask key="keyEquivalentModifierMask"/>
                                                         <menu key="submenu" id="qsM-2Z-IR1">
                                                             <items>
-                                                                <menuItem title="Raw" tag="2" id="nr2-eS-rAb">
-                                                                    <modifierMask key="keyEquivalentModifierMask"/>
+                                                                <menuItem title="Raw" tag="2" keyEquivalent="e" id="nr2-eS-rAb">
+                                                                    <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
                                                                     <connections>
                                                                         <action selector="exportEventsRawToJSON:" target="Voe-Tx-rLC" id="7d8-0f-8K5"/>
                                                                     </connections>
                                                                 </menuItem>
-                                                                <menuItem title="w/ People Props" tag="3" id="O3d-Uj-WRq">
-                                                                    <modifierMask key="keyEquivalentModifierMask"/>
+                                                                <menuItem title="w/ People Props" tag="3" keyEquivalent="c" id="O3d-Uj-WRq">
+                                                                    <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
                                                                     <connections>
                                                                         <action selector="exportEventsCombinedToJSON:" target="Voe-Tx-rLC" id="EJU-G8-9Z1"/>
                                                                     </connections>
@@ -367,14 +367,14 @@
                                                         <modifierMask key="keyEquivalentModifierMask"/>
                                                         <menu key="submenu" id="E3G-Op-opu">
                                                             <items>
-                                                                <menuItem title="Profiles" tag="1" id="be7-5D-aIE">
-                                                                    <modifierMask key="keyEquivalentModifierMask"/>
+                                                                <menuItem title="Profiles" tag="1" keyEquivalent="p" id="be7-5D-aIE">
+                                                                    <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
                                                                     <connections>
                                                                         <action selector="exportPeopleProfilesToJSON:" target="Voe-Tx-rLC" id="B3p-Am-7dz"/>
                                                                     </connections>
                                                                 </menuItem>
-                                                                <menuItem title="From Events" tag="1" id="XWi-7B-Q6u">
-                                                                    <modifierMask key="keyEquivalentModifierMask"/>
+                                                                <menuItem title="From Events" tag="1" keyEquivalent="x" id="XWi-7B-Q6u">
+                                                                    <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
                                                                     <connections>
                                                                         <action selector="exportPeopleFromEventsToJSON:" target="Voe-Tx-rLC" id="pUM-Or-i5p"/>
                                                                     </connections>

@@ -57,12 +57,14 @@
 
 - (void)eventsWithPeopleProperties:(BOOL)peopleProps
 {
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingBegan object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatJSON}];
+    
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
+    __block NSUInteger index = 1;
     
     [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
         
         NSUInteger count = [transaction numberOfKeysInCollection:kMPDBCollectionNameEvents];
-        __block NSUInteger index = 1;
 
         NSData *openBracket = [[NSString stringWithFormat:@"["] dataUsingEncoding:NSUTF8StringEncoding];
         NSData *closeBracket = [[NSString stringWithFormat:@"]"] dataUsingEncoding:NSUTF8StringEncoding];
@@ -99,16 +101,21 @@
         
         [_stream write:[closeBracket bytes] maxLength:[closeBracket length]];
     }];
+    
+    NSString *subType = peopleProps ? kMPExportTypeEventsCombined : kMPExportTypeEventsRaw;
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingEnded object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatJSON, kMPFileWritingExportObjectKey:kMPExportObjectEvents,kMPFileWritingExportTypeKey:subType, kMPFileWritingCount:@(index-1)}];
 }
 
 - (void)peopleProfiles
 {
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingBegan object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatJSON}];
+    
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
+    __block NSUInteger index = 1;
     
     [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
         
         NSUInteger count = [transaction numberOfKeysInCollection:kMPDBCollectionNamePeople];
-        __block NSUInteger index = 1;
         
         NSData *openBracket = [[NSString stringWithFormat:@"["] dataUsingEncoding:NSUTF8StringEncoding];
         NSData *closeBracket = [[NSString stringWithFormat:@"]"] dataUsingEncoding:NSUTF8StringEncoding];
@@ -128,11 +135,16 @@
         
         [_stream write:[closeBracket bytes] maxLength:[closeBracket length]];
     }];
+    
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingEnded object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatJSON, kMPFileWritingExportObjectKey:kMPExportObjectPeople,kMPFileWritingExportTypeKey:kMPExportTypePeopleProfiles, kMPFileWritingCount:@(index-1)}];
 }
 
 - (void)peopleFromEvents
 {
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingBegan object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatJSON}];
+    
     AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
+    __block NSUInteger index = 1;
     
     NSMutableSet *distinctIDs = [NSMutableSet set];
     [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
@@ -162,7 +174,7 @@
             }
         }
         
-        NSUInteger index = 1;
+        
         NSUInteger count = [idsWithProfiles count];
         
         for (NSString *idWithProfile in idsWithProfiles)
@@ -178,6 +190,8 @@
         
         [_stream write:[closeBracket bytes] maxLength:[closeBracket length]];
     }];
+    
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingEnded object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatJSON, kMPFileWritingExportObjectKey:kMPExportObjectPeople, kMPFileWritingExportTypeKey:kMPExportTypePeopleFromEvents, kMPFileWritingCount:@(index-1)}];
     
 }
 
