@@ -171,7 +171,7 @@
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPExportBegan object:nil];
     
     NSURLSessionConfiguration* sessionConfig = [NSURLSessionConfiguration defaultSessionConfiguration];
-    sessionConfig.timeoutIntervalForRequest = 120000.0;
+    sessionConfig.timeoutIntervalForRequest = 120.0;
     
     /* Create session, and set a NSURLSessionDelegate. */
     NSURLSession* session = [NSURLSession sessionWithConfiguration:sessionConfig delegate:self delegateQueue:nil];
