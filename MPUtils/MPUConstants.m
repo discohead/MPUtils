@@ -57,54 +57,52 @@ NSString *const kMPUserDefaultsEventsKey           = @"EventsKey";
 NSString *const kMPUserDefaultsFromDateKey         = @"FromDateKey";
 NSString *const kMPUserDefaultsToDateKey           = @"ToDateKey";
 
+#pragma mark - File Export Types
+
+NSString *const kMPExportObjectEvents         = @"Events";
+NSString *const kMPExportObjectPeople         = @"People";
+NSString *const kMPExportObjectTransactions   = @"Transactions";
+NSString *const kMPExportFormatCSV            = @"CSV";
+NSString *const kMPExportFormatJSON           = @"JSON";
+NSString *const kMPExportTypeEventsRaw        = @"Raw Events";
+NSString *const kMPExportTypeEventsCombined   = @"Combined Events";
+NSString *const kMPExportTypePeopleProfiles   = @"People Profiles";
+NSString *const kMPExportTypePeopleFromEvents = @"People from Events";
+NSString *const kMPExportTypeTransactions     = @"Transactions";
+
 #pragma mark - NSNotificationCenter
 
-NSString *const kMPCSVWritingBegan   = @"CSVWritingBegan";
-NSString *const kMPCSVWritingEnded   = @"CSVWritingEnded";
-NSString *const kMPExportBegan       = @"ExportBegan";
-NSString *const kMPExportUpdate      = @"ExportUpdate";
-NSString *const kMPExportEnd         = @"ExportEnd";
-NSString *const kMPUserInfoKeyCount  = @"UserInfoKeyCount";
-NSString *const kMPUserInfoKeyType   = @"UserInfoKeyType";
-NSString *const kMPStatusUpdate      = @"StatusUpdate";
-NSString *const kMPUserInfoKeyStatus = @"UserInfoKeyStatus";
+NSString *const kMPDBWritingBegan           = @"DatabaseWritingBegan";
+NSString *const kMPDBWritingUpdate          = @"DatabaseWritingUpdate";
+NSString *const kMPDBWritingEnded           = @"DatabaseWritingEnded";
+NSString *const kMPFileWritingBegan         = @"FileWritingBegan";
+NSString *const kMPFileWritingUpdate        = @"FileWritingUpdate";
+NSString *const kMPFileWritingEnded         = @"FileWritingEnded";
+NSString *const kMPFileWritingExportObjectKey    = @"FileWritingExportType";
+NSString *const kMPFileWritingExportTypeKey = @"FileWritingExportSubType";
+NSString *const kMPFileWritingFormatKey        = @"FileWritingFormat";
+NSString *const kMPFileWritingCount         = @"FileWritingCount";
+NSString *const kMPAPIRequestBegan          = @"APIRequestBega";
+NSString *const kMPAPIRequestUpdate         = @"APIRequestUpdate";
+NSString *const kMPAPIRequestEnded          = @"APIRequestEnded";
+NSString *const kMPAPIRequestCancelled      = @"APIRequestCancelled";
+NSString *const kMPAPIRequestFailed         = @"APIRequestFailed";
+NSString *const kMPUserInfoKeyCount         = @"UserInfoKeyCount";
+NSString *const kMPUserInfoKeyType          = @"UserInfoKeyType";
+NSString *const kMPUserInfoKeyHighVolume    = @"UserInfoKeyHighVolume";
+NSString *const kMPStatusUpdate             = @"StatusUpdate";
+NSString *const kMPUserInfoKeyStatus        = @"UserInfoKeyStatus";
 
-#pragma mark - Couchbase Lite
+#pragma mark - YapDatabase
 
-NSString *const kMPCBLDatabaseName                  = @"mputils-database";
-NSString *const kMPCBLThreadName                    = @"couchbaseLiteThread";
+NSString *const kMPDBCollectionNameEvents                 = @"eventsCollection";
+NSString *const kMPDBCollectionNamePeople                 = @"peopleCollection";
+NSString *const kMPDBCollectionNamePropertiesPeople       = @"peoplePropertiesCollection";
+NSString *const kMPDBCollectionNamePropertiesEvents       = @"eventPropertiesCollection";
+NSString *const kMPDBCollectionNamePropertiesTransactions = @"transactionsPropertiesCollection";
+NSString *const kMPDBPropertiesKeyTransactions            = @"transactionPropertiesObjectKey";
+NSString *const kMPDBPropertiesKeyPeople                  = @"peoplePropertiesObjectKey";
+NSString *const kMPDBPropertiesKeyEvents                  = @"eventPropertiesObjectKey";
 
-NSString *const kMPCBLDocumentTypeEvent             = @"event";
-NSString *const kMPCBLDocumentTypePeopleProfile     = @"people profile";
-NSString *const kMPCBLDocumentTypeEventProperties   = @"event properties";
-NSString *const kMPCBLDocumentTypePeopleProperties  = @"people properties";
-
-NSString *const kMPCBLDocumentKeyType                    = @"type";
-NSString *const kMPCBLDocumentKeyID                      = @"_id";
-NSString *const kMPCBLDocumentKeyEventPropertyKeys       = @"eventPropertyKeys";
-NSString *const kMPCBLDocumentKeyPeoplePropertyKeys      = @"peoplePropertyKeys";
-NSString *const kMPCBLDocumentKeyTransactionPropertyKeys = @"transactionPropertyKeys";
-
-NSString *const kMPCBLEventDocumentKeyEvent         = @"event";
-NSString *const kMPCBLEventDocumentKeyProperties    = @"properties";
-NSString *const kMPCBLEventDocumentKeyDistinctID    = @"distinct_id";
-
-NSString *const kMPCBLPeopleDocumentKeyDistinctID   = @"$distinct_id";
-NSString *const kMPCBLPeopleDocumentKeyProperties   = @"$properties";
-NSString *const kMPCBLPeopleDocumentKeyTransactions = @"$transactions";
-
-NSString *const kMPCBLDocumentIDEventProperties       = @"eventPropertiesDocumentID";
-NSString *const kMPCBLDocumentIDPeopleProperties      = @"peoplePropertiesDocumentID";
-NSString *const kMPCBLDocumentIDTransactionProperties = @"transactionPropertiesDocumentID";
-
-NSString *const kMPCBLViewNameEvents                = @"eventsView";
-NSString *const kMPCBLViewNamePeople                = @"peopleView";
-NSString *const kMPCBLViewNameCombined              = @"combinedView";
-NSString *const kMPCBLViewNameTransactions          = @"transactionsView";
-NSString *const kMPCBLViewNameEventCount            = @"eventCountView";
-NSString *const kMPCBLViewNameEventProperties       = @"eventPropertiesView";
-NSString *const kMPCBLViewNamePeopleCount           = @"peopleCountView";
-NSString *const kMPCBLViewNameEventDistinctIDs      = @"eventDistinctIDsView";
-NSString *const kmPCBlViewNamePeopleProperties      = @"peoplePropertiesView";
 
 @end

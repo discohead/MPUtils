@@ -9,6 +9,7 @@
 #import "NewProjectViewController.h"
 #import "MPUConstants.h"
 #import "ViewController.h"
+#import <Mixpanel-OSX-Community/Mixpanel.h>
 
 @interface NewProjectViewController ()
 @property (weak) IBOutlet NSTextField *apiKeyTextField;
@@ -56,6 +57,11 @@
         [userDefaults setObject:projects forKey:kMPUserDefaultsProjectsKey];
         [userDefaults setObject:projectNames forKey:kMPuserDefaultsUIProjectNamesKey];
         [userDefaults synchronize];
+        Mixpanel *mixpanel = [Mixpanel sharedInstance];
+        [mixpanel.people increment:@"Projects Added" by:@1];
+        [mixpanel registerSuperProperties:@{@"Projects Added":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Projects Added"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
+        
+        [[Mixpanel sharedInstance] track:@"Project Added"];
         
         NSWindow *mainWindow = [NSApplication sharedApplication].windows[0];
         ViewController *vc = (ViewController *)[mainWindow contentViewController];

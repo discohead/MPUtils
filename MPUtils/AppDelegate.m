@@ -8,277 +8,331 @@
 
 #import "AppDelegate.h"
 #import "MPUConstants.h"
-#import "CSVParser.h"
+#import "CSVWriter.h"
+#import "JSONWriter.h"
 #import "ViewController.h"
+#import <YapDatabase/YapDatabase.h>
 #import <Mixpanel-OSX-Community/Mixpanel.h>
 
 @interface AppDelegate () <NSOpenSavePanelDelegate>
+
+@property (strong, nonatomic) NSString *databasePath;
+@property (weak, nonatomic) NSWindow *mainWindow;
 
 @end
 
 @implementation AppDelegate
 
+- (NSWindow *)mainWindow
+{
+    return [[NSApplication sharedApplication] mainWindow];
+}
+
+- (NSString *)basePath {
+    
+    if (!_basePath)
+    {
+        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+        NSString *documentsDirectory = [paths objectAtIndex:0];
+        NSFileManager *fileManager= [NSFileManager defaultManager];
+        NSString *mputilsDirectory = [documentsDirectory stringByAppendingPathComponent:@"MPUtils"];
+        NSError *error = nil;
+        if(![fileManager createDirectoryAtPath:mputilsDirectory withIntermediateDirectories:YES attributes:nil error:&error]) {
+            // An error has occurred
+            [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"Failed to create directory \"%@\". Error: %@ - Falling back to ~/Documents", mputilsDirectory, error.localizedDescription] attributes:@{NSForegroundColorAttributeName:[NSColor redColor]}]];
+            _basePath = documentsDirectory;
+        } else {
+            _basePath = mputilsDirectory;
+        }
+    }
+    return _basePath;
+}
+
+- (NSString *)databasePath
+{
+    if (!_databasePath)
+    {
+        NSFileManager *fileManager= [NSFileManager defaultManager];
+        NSString *databaseDirectory = [self.basePath stringByAppendingPathComponent:@"database"];
+        NSError *error = nil;
+        if(![fileManager createDirectoryAtPath:databaseDirectory withIntermediateDirectories:YES attributes:nil error:&error]) {
+            // An error has occurred
+            [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"Failed to create directory \"%@\". Error: %@ - Falling back to ~/Documents", databaseDirectory, error.localizedDescription] attributes:@{NSForegroundColorAttributeName:[NSColor redColor]}]];
+            NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+            NSString *documentsDirectory = [paths objectAtIndex:0];
+            _databasePath = [documentsDirectory stringByAppendingPathComponent:@"database.sqlite"];
+        } else {
+            _databasePath = [databaseDirectory stringByAppendingPathComponent:@"database.sqlite"];
+        }
+    }
+    return _databasePath;
+}
+
+- (YapDatabase *)sharedYapDatabase {
+    static YapDatabase *_sharedYapDatabase = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _sharedYapDatabase = [[YapDatabase alloc]initWithPath:self.databasePath];
+    });
+    
+    return _sharedYapDatabase;
+}
+
 #pragma mark - App Life Cycle
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
-    // Setup Database
     
-    [self setupCouchbaseLite];
-}
-
-- (void)applicationWillTerminate:(NSNotification *)aNotification {
-    // Delete Database on Termination
+    [[NSUserNotificationCenter defaultUserNotificationCenter] setDelegate:self];
     
-    __block CBLDatabase *database = self.database;
+    // Setup Database and connection
+    self.database = [self sharedYapDatabase];
+    [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"Database created at %@",[[NSURL fileURLWithPath:self.databasePath]absoluteString]]]];
+    self.connection = [self.database newConnection];
     
-    dispatch_sync(self.manager.dispatchQueue, ^{
-        NSError *deleteError;
-        
-        [database deleteDatabase:&deleteError];
-        if (deleteError)
-        {
-            NSLog(@"Error deleting database: %@", deleteError.localizedDescription);
-        }
-        
-    });
-}
-
-
-#pragma mark - CouchbaseLite Methods
-
-- (void)setupCouchbaseLite
-{
-    dispatch_queue_t cblQueue = dispatch_queue_create("cbl", NULL);
-    _manager = [[CBLManager alloc] init];
-    if (!_manager)
-    {
-        [self updateStatusWithString:@"Cannot create instance of CBLManager"];
-    } else
-    {
-        _manager.dispatchQueue = cblQueue;
-        dispatch_sync(cblQueue, ^{
-            [self createTheDatabase];
-        });
-    }
+    //Ensure we're starting with a clean database
+    [self updateStatusWithString:[[NSAttributedString alloc] initWithString:@"Initializing Database..." attributes:@{NSForegroundColorAttributeName:[NSColor grayColor]}]];
+    [self.connection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+        [transaction removeAllObjectsInAllCollections];
+    }];
+    [self updateStatusWithString:[[NSAttributedString alloc] initWithString:@"Database Initialized!" attributes:@{NSForegroundColorAttributeName:[NSColor grayColor]}]];
     
-}
-
-- (BOOL)createTheDatabase {
-    
-    NSError *error;
-    
-    _database = [_manager databaseNamed:kMPCBLDatabaseName error:&error];
-    if (!_database)
-    {
-        [self updateStatusWithString:[NSString stringWithFormat:@"Cannot create database. Error message: %@", error.localizedDescription]];
-        return NO;
-    } else
-    {
-        [self createViews];
-    }
-    
-    NSString *databaseLocation = [NSString stringWithFormat:@"%@/Library/Application Support/%@/CouchbaseLite",NSHomeDirectory(),[[NSBundle mainBundle] bundleIdentifier]];
-    [self updateStatusWithString:[NSString stringWithFormat:@"Database %@ created at %@",kMPCBLDatabaseName, [NSString stringWithFormat:@"%@/%@%@",databaseLocation, kMPCBLDatabaseName, @".cblite2"]]];
-    
-    return YES;
-}
-
-- (void)createViews
-{
-    // Raw Events View w/ Count Reduce
-    CBLView *eventsView = [_database viewNamed:kMPCBLViewNameEvents];
-    [eventsView setMapBlock:^(NSDictionary *doc, CBLMapEmitBlock emit) {
-        if ([doc[kMPCBLDocumentKeyType] isEqualToString:kMPCBLDocumentTypeEvent])
-        {
-            emit(doc[kMPCBLDocumentKeyID], NULL);
-        }
-    } reduceBlock:^id(NSArray *keys, NSArray *values, BOOL rereduce) {
-        return @(values.count);
-    } version:@"3"];
-    
-    // Distinct ID's of Events view w/ Unique Reduce
-    CBLView *eventDistinctIDsView = [_database viewNamed:kMPCBLViewNameEventDistinctIDs];
-    [eventDistinctIDsView setMapBlock:^(NSDictionary *doc, CBLMapEmitBlock emit) {
-        if ([doc[kMPCBLDocumentKeyType] isEqualToString:kMPCBLDocumentTypeEvent])
-        {
-            emit(doc[kMPCBLEventDocumentKeyProperties][kMPCBLEventDocumentKeyDistinctID], NULL);
-        }
-    } reduceBlock:^id(NSArray *keys, NSArray *values, BOOL rereduce) {
-        NSMutableSet *distinctIDSet = [NSMutableSet set];
-        for (NSString *distinctID in keys)
-        {
-            [distinctIDSet addObject:distinctID];
-        }
-        return [distinctIDSet allObjects];
-    } version:@"1"];
-    
-    CBLView *eventPropertiesView = [_database viewNamed:kMPCBLViewNameEventProperties];
-    [eventPropertiesView setMapBlock:^(NSDictionary *doc, CBLMapEmitBlock emit) {
-        if ([doc[kMPCBLDocumentKeyType] isEqualToString:kMPCBLDocumentTypeEvent])
-        {
-            emit(doc[kMPCBLDocumentKeyID], doc[kMPCBLEventDocumentKeyProperties]);
-        }
-    } reduceBlock:^id(NSArray *keys, NSArray *values, BOOL rereduce) {
-        NSMutableSet *propKeys = [NSMutableSet set];
-        for (NSDictionary *props in values)
-        {
-            [propKeys addObjectsFromArray:props.allKeys];
-        }
-        return [propKeys allObjects];
-    } version:@"1"];
-    
-    // Raw People View w/ Count Reduce
-    CBLView *peopleView = [_database viewNamed:kMPCBLViewNamePeople];
-    [peopleView setMapBlock:^(NSDictionary *doc, CBLMapEmitBlock emit) {
-        if ([doc[kMPCBLDocumentKeyType] isEqualToString:kMPCBLDocumentTypePeopleProfile])
-        {
-            emit(doc[kMPCBLDocumentKeyID], NULL);
-        }
-    } reduceBlock:^id(NSArray *keys, NSArray *values, BOOL rereduce) {
-        return @(values.count);
-    } version:@"3"];
-    
-    // People property keys view
-    
-    CBLView *peoplPropertiesView = [_database viewNamed:kmPCBlViewNamePeopleProperties];
-    [peoplPropertiesView setMapBlock:^(NSDictionary *doc, CBLMapEmitBlock emit) {
-        if ([doc[kMPCBLDocumentKeyType] isEqualToString:kMPCBLDocumentTypePeopleProfile])
-        {
-            emit(doc[kMPCBLDocumentKeyID], doc[kMPCBLPeopleDocumentKeyProperties]);
-        }
-    } reduceBlock:^id(NSArray *keys, NSArray *values, BOOL rereduce) {
-        NSMutableSet *propKeys = [NSMutableSet set];
-        for (NSDictionary *props in values)
-        {
-            [propKeys addObjectsFromArray:props.allKeys];
-        }
-        return [propKeys allObjects];
-    } version:@"1"];
-    
-    // $transactions view w/ property keys reduce
-    CBLView *transactionsView = [_database viewNamed:kMPCBLViewNameTransactions];
-    [transactionsView setMapBlock:^(NSDictionary *doc, CBLMapEmitBlock emit) {
-        if ([doc[kMPCBLDocumentKeyType] isEqualToString:kMPCBLDocumentTypePeopleProfile])
-        {
-            if (doc[kMPCBLPeopleDocumentKeyProperties][kMPCBLPeopleDocumentKeyTransactions])
-            {
-                emit(doc[kMPCBLDocumentKeyID],doc[kMPCBLPeopleDocumentKeyProperties][kMPCBLPeopleDocumentKeyTransactions]);
-            }
-        }
-    } reduceBlock:^id(NSArray *keys, NSArray *values, BOOL rereduce) {
-        NSMutableSet *propKeySet = [NSMutableSet set];
-        for (NSArray *transactions in values)
-        {
-            for (NSDictionary *transaction in transactions)
-            {
-                [propKeySet addObjectsFromArray:transaction.allKeys];
-            }
-        }
-        return [propKeySet allObjects];
-    } version:@"2"];
-    
+    // Do some Mixpanel stuff
+    Mixpanel *mixpanel = [Mixpanel sharedInstanceWithToken:@"412b93fb1e3b8204fedf7cdc22d2b570"];
+    [mixpanel flush];
+    mixpanel.flushInterval = 30.0;
+    [mixpanel identify:mixpanel.distinctId];
+    NSDictionary *created = @{@"$created":[NSDate date]};
+    [mixpanel.people setOnce:created];
+    [mixpanel registerSuperPropertiesOnce:created];
+    [mixpanel.people increment:@{@"App Opens":@1}];
+    [mixpanel registerSuperProperties:@{@"App Opens":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"App Opens"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
+    [mixpanel track:@"$app_open"];
+    [mixpanel flush];
 
 }
+
 
 #pragma mark - Export Menu IBActions
 
-- (IBAction)exportEvents:(NSMenuItem *)sender {
-    NSSavePanel *savePanel = [self makeSavePanel];
+- (IBAction)exportEventsRawToCSV:(NSMenuItem *)sender
+{
+    NSSavePanel *savePanel = [self makeSavePanelForFileTypes:@[@"csv",@"CSV"]];
     
-    NSWindow *window = [NSApplication sharedApplication].windows[0];
-    
-    [savePanel beginSheetModalForWindow:window completionHandler:^(NSInteger result) {
+    [savePanel beginSheetModalForWindow:self.mainWindow completionHandler:^(NSInteger result) {
         [savePanel orderOut:nil];
         
         if (result == NSFileHandlingPanelOKButton)
         {
-            // Export->Events->Raw
-            if (sender.tag == 0)
-            {
-                CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
-                [parser eventsToCSVWithPeopleProperties:NO];
-            
-            // Export->Events->w/People Props
-            } else if (sender.tag == 1)
-            {
-                CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
-                [parser eventsToCSVWithPeopleProperties:YES];
-            }
+            [self exportOfType:kMPExportTypeEventsRaw usingWriter:[[CSVWriter alloc] initForWritingToFile:savePanel.URL.path]];
         }
     }];
-
+    
 }
 
-- (IBAction)exportPeopleProfiles:(NSMenuItem *)sender {
-    NSSavePanel *savePanel = [self makeSavePanel];
+- (IBAction)exportEventsRawToJSON:(NSMenuItem *)sender
+{
+    NSSavePanel *savePanel = [self makeSavePanelForFileTypes:@[@"json",@"JSON"]];
     
-    NSWindow *window = [NSApplication sharedApplication].windows[0];
-    
-    [savePanel beginSheetModalForWindow:window completionHandler:^(NSInteger result) {
+    [savePanel beginSheetModalForWindow:self.mainWindow completionHandler:^(NSInteger result) {
         [savePanel orderOut:nil];
         
-        // Export->People->Profiles
         if (result == NSFileHandlingPanelOKButton)
         {
-            CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
-            [parser peopleToCSV];
+            [self exportOfType:kMPExportTypeEventsRaw usingWriter:[[JSONWriter alloc] initForWritingToFile:savePanel.URL.path]];
         }
     }];
 }
 
-- (IBAction)exportTransactions:(NSMenuItem *)sender {
-    NSSavePanel *savePanel = [self makeSavePanel];
+- (IBAction)exportEventsCombinedToCSV:(NSMenuItem *)sender
+{
+    NSSavePanel *savePanel = [self makeSavePanelForFileTypes:@[@"csv",@"CSV"]];
     
-    NSWindow *window = [NSApplication sharedApplication].windows[0];
-    
-    [savePanel beginSheetModalForWindow:window completionHandler:^(NSInteger result) {
+    [savePanel beginSheetModalForWindow:self.mainWindow completionHandler:^(NSInteger result) {
         [savePanel orderOut:nil];
         
-        // Export->People->Transactions
         if (result == NSFileHandlingPanelOKButton)
         {
-            CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
-            [parser transactionsToCSV];
+            [self exportOfType:kMPExportTypeEventsCombined usingWriter:[[CSVWriter alloc] initForWritingToFile:savePanel.URL.path]];
         }
     }];
 }
 
-- (IBAction)exportPeopleFromEvents:(NSMenuItem *)sender {
-    NSSavePanel *savePanel = [self makeSavePanel];
+- (IBAction)exportEventsCombinedToJSON:(NSMenuItem *)sender
+{
+    NSSavePanel *savePanel = [self makeSavePanelForFileTypes:@[@"json",@"JSON"]];
     
-    NSWindow *window = [NSApplication sharedApplication].windows[0];
-    
-    [savePanel beginSheetModalForWindow:window completionHandler:^(NSInteger result) {
+    [savePanel beginSheetModalForWindow:self.mainWindow completionHandler:^(NSInteger result) {
         [savePanel orderOut:nil];
         
-        // Export->People->From Events
         if (result == NSFileHandlingPanelOKButton)
         {
-            CSVParser *parser = [[CSVParser alloc] initForWritingToFile:savePanel.URL.path];
-            [parser peopleFromEventsToCSV];
+            [self exportOfType:kMPExportTypeEventsCombined usingWriter:[[JSONWriter alloc] initForWritingToFile:savePanel.URL.path]];
         }
     }];
+}
+
+- (IBAction)exportPeopleProfilesToCSV:(NSMenuItem *)sender
+{
+    NSSavePanel *savePanel = [self makeSavePanelForFileTypes:@[@"csv",@"CSV"]];
+    
+    [savePanel beginSheetModalForWindow:self.mainWindow completionHandler:^(NSInteger result) {
+        [savePanel orderOut:nil];
+        
+        if (result == NSFileHandlingPanelOKButton)
+        {
+            [self exportOfType:kMPExportTypePeopleProfiles usingWriter:[[CSVWriter alloc] initForWritingToFile:savePanel.URL.path]];
+        }
+    }];
+}
+
+- (IBAction)exportPeopleProfilesToJSON:(NSMenuItem *)sender
+{
+    NSSavePanel *savePanel = [self makeSavePanelForFileTypes:@[@"json",@"JSON"]];
+    
+    [savePanel beginSheetModalForWindow:self.mainWindow completionHandler:^(NSInteger result) {
+        [savePanel orderOut:nil];
+        
+        if (result == NSFileHandlingPanelOKButton)
+        {
+            [self exportOfType:kMPExportTypePeopleProfiles usingWriter:[[JSONWriter alloc] initForWritingToFile:savePanel.URL.path]];
+        }
+    }];
+}
+
+- (IBAction)exportPeopleFromEventsToCSV:(NSMenuItem *)sender
+{
+    NSSavePanel *savePanel = [self makeSavePanelForFileTypes:@[@"csv",@"CSV"]];
+    
+    [savePanel beginSheetModalForWindow:self.mainWindow completionHandler:^(NSInteger result) {
+        [savePanel orderOut:nil];
+        
+        if (result == NSFileHandlingPanelOKButton)
+        {
+            [self exportOfType:kMPExportTypePeopleFromEvents usingWriter:[[CSVWriter alloc] initForWritingToFile:savePanel.URL.path]];
+        }
+    }];
+}
+
+- (IBAction)exportPeopleFromEventsToJSON:(NSMenuItem *)sender
+{
+    NSSavePanel *savePanel = [self makeSavePanelForFileTypes:@[@"json",@"JSON"]];
+    
+    [savePanel beginSheetModalForWindow:self.mainWindow completionHandler:^(NSInteger result) {
+        [savePanel orderOut:nil];
+        
+        if (result == NSFileHandlingPanelOKButton)
+        {
+            [self exportOfType:kMPExportTypePeopleFromEvents usingWriter:[[JSONWriter alloc] initForWritingToFile:savePanel.URL.path]];
+        }
+    }];
+}
+
+- (IBAction)exportTransactionsToCSV:(NSMenuItem *)sender
+{
+    NSSavePanel *savePanel = [self makeSavePanelForFileTypes:@[@"csv",@"CSV"]];
+    
+    [savePanel beginSheetModalForWindow:self.mainWindow completionHandler:^(NSInteger result) {
+        [savePanel orderOut:nil];
+        
+        if (result == NSFileHandlingPanelOKButton)
+        {
+            [self exportOfType:kMPExportTypeTransactions usingWriter:[[CSVWriter alloc] initForWritingToFile:savePanel.URL.path]];
+        }
+    }];
+}
+
+- (void)exportOfType:(NSString *)exportType usingWriter:(id)writer
+{
+    NSString *format = [NSString string];
+    dispatch_queue_t exportQueue = dispatch_queue_create("export", NULL);
+    
+    if ([writer isKindOfClass:[CSVWriter class]])
+    {
+        writer = (CSVWriter *)writer;
+        format = @"CSV";
+        
+    } else if ([writer isKindOfClass:[JSONWriter class]])
+    {
+        writer = (JSONWriter *)writer;
+        format = @"JSON";
+    }
+    
+    void (^exportBlock)() = ^void() {};
+    
+    if ([exportType isEqualToString:kMPExportTypeEventsRaw])
+    {
+        exportBlock = ^void() {[writer eventsWithPeopleProperties:NO];};
+
+    } else if ([exportType isEqualToString:kMPExportTypeEventsCombined])
+    {
+        exportBlock = ^void() {[writer eventsWithPeopleProperties:YES];};
+        
+    } else if ([exportType isEqualToString:kMPExportTypePeopleProfiles])
+    {
+        exportBlock = ^void() {[writer peopleProfiles];};
+        
+    } else if ([exportType isEqualToString:kMPExportTypePeopleFromEvents])
+    {
+        exportBlock = ^void() {[writer peopleFromEvents];};
+        
+    } else if ([exportType isEqualToString:kMPExportTypeTransactions])
+    {
+        exportBlock = ^void() {[writer transactions];};
+    }
+    
+    dispatch_async(exportQueue, exportBlock);
+    
+    [self incrementMixpanelPropertiesForExportofType:exportType andFormat:format];
+}
+
+// Help menu IBAction
+
+- (IBAction)launchExportURLinBrowser:(id)sender
+{
+    Mixpanel *mixpanel = [Mixpanel sharedInstance];
+    [mixpanel.people increment:@{@"Documentation Opens":@1}];
+    [mixpanel registerSuperProperties:@{@"Documentation Opens":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Documentation Opens"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
+    [[Mixpanel sharedInstance] track:@"Opened Documentation"];
+    
+    [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"https://mixpanel.com/docs/api-documentation/data-export-api"]];
+}
+
+#pragma mark - NSUserNotificationCenter Delegate
+
+- (BOOL)userNotificationCenter:(NSUserNotificationCenter *)center shouldPresentNotification:(NSUserNotification *)notification
+{
+    return YES;
 }
 
 #pragma mark - Utility Methods
 
-- (void)updateStatusWithString:(NSString *)status
+- (void)updateStatusWithString:(NSAttributedString *)status
 {
     NSDictionary *statusInfo = @{kMPUserInfoKeyType:kMPStatusUpdate,kMPUserInfoKeyStatus:status};
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPStatusUpdate object:nil userInfo:statusInfo];
 }
 
-- (NSSavePanel *)makeSavePanel
+- (NSSavePanel *)makeSavePanelForFileTypes:(NSArray *)fileTypes;
 {
     NSSavePanel *savePanel = [NSSavePanel savePanel];
     savePanel.canCreateDirectories = YES;
     savePanel.delegate = self;
-    savePanel.allowedFileTypes = @[@"csv",@"CSV"];
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    savePanel.directoryURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@", paths[0]]];
+    savePanel.allowedFileTypes = fileTypes;
+    savePanel.directoryURL = [NSURL URLWithString:self.basePath];
     
     return savePanel;
 }
 
-
+- (void)incrementMixpanelPropertiesForExportofType:(NSString *)exportType andFormat:(NSString *)format
+{
+    Mixpanel *mixpanel = [Mixpanel sharedInstance];
+    NSString *specificCount = [NSString stringWithFormat:@"%@ %@ Exports", exportType, format];
+    NSString *formatCount = [NSString stringWithFormat:@"Total %@ Exports", format];
+    NSString *typeCount = [NSString stringWithFormat:@"Total %@ Exports", exportType];
+    [mixpanel.people increment:@{specificCount:@1,formatCount:@1,typeCount:@1, @"Total Exports":@1}];
+    [mixpanel registerSuperProperties:@{specificCount:@([[[[mixpanel currentSuperProperties] objectsForKeys:@[specificCount] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1),
+                                        formatCount:@([[[[mixpanel currentSuperProperties] objectsForKeys:@[formatCount] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1),
+                                        typeCount:@([[[[mixpanel currentSuperProperties] objectsForKeys:@[typeCount] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1),
+                                        @"Total Exports":@([[[[mixpanel currentSuperProperties] objectsForKeys:@[@"Total Exports"] notFoundMarker:@0] objectAtIndex:0] integerValue] + 1)}];
+}
 @end

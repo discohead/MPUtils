@@ -9,10 +9,11 @@
 #import "ProjectEditViewController.h"
 #import "MPUConstants.h"
 #import "ViewController.h"
+#import <Mixpanel-OSX-Community/Mixpanel.h>
 
 @interface ProjectEditViewController ()
 
-@property (weak) IBOutlet NSPopUpButton *projectPopUpButton;
+
 @property (weak) IBOutlet NSTextField *apiKeyTextField;
 @property (weak) IBOutlet NSTextField *apiSecretTextField;
 @property (weak) IBOutlet NSTextField *projectTokenTextField;
@@ -20,6 +21,7 @@
 @property (weak, nonatomic) NSArray *projects;
 @property (weak, nonatomic) NSDictionary *selectedProject;
 @property (strong, nonatomic) NSArrayController *projectsArrayController;
+
 
 @end
 
@@ -88,6 +90,7 @@
     [updatedProjects replaceObjectAtIndex:self.projectPopUpButton.indexOfSelectedItem withObject:updatedProject];
     [[NSUserDefaults standardUserDefaults] setObject:updatedProjects forKey:kMPUserDefaultsProjectsKey];
     [[NSUserDefaults standardUserDefaults] synchronize];
+    [[Mixpanel sharedInstance] track:@"Project Updated"];
 }
 
 - (IBAction)deleteButtonPressed:(id)sender
@@ -96,6 +99,7 @@
     [updatedProjecs removeObjectAtIndex:self.projectPopUpButton.indexOfSelectedItem];
     [[NSUserDefaults standardUserDefaults] setObject:updatedProjecs forKey:kMPUserDefaultsProjectsKey];
     [[NSUserDefaults standardUserDefaults] synchronize];
+    [[Mixpanel sharedInstance] track:@"Project Deleted"];
     [self updateTextFields];
     
     NSWindow *mainWindow = [NSApplication sharedApplication].windows[0];

@@ -10,12 +10,15 @@
 #import "MPUConstants.h"
 #import "ExportRequest.h"
 #import "AppDelegate.h"
+#import "ProjectEditViewController.h"
+#import <YapDatabase/YapDatabase.h>
+#import <Mixpanel-OSX-Community/Mixpanel.h>
 
 @interface ViewController ()
 
 @property (weak) IBOutlet NSPopUpButton *projectPopUpButton;
 @property (strong, nonatomic) NSUserDefaultsController *userDefaultsController;
-@property (strong, nonatomic) NSArrayController *projectsArrayController;
+@property (strong, nonatomic) IBOutlet NSArrayController *projectsArrayController;
 @property (strong, nonatomic) NSArray *projects;
 @property (weak) IBOutlet NSProgressIndicator *progressIndicator;
 @property (weak) IBOutlet NSTextField *eventsTextField;
@@ -29,13 +32,69 @@
 @property (weak) IBOutlet NSTextField *eventCountLabel;
 @property (weak) IBOutlet NSTextField *peopleCountLabel;
 @property (unsafe_unretained) IBOutlet NSTextView *statusLogTextView;
-
+@property (strong, nonatomic) NSDate *maxDate;
+@property (weak, nonatomic) ExportRequest *currentExport;
+@property (nonatomic) NSTimeInterval startTime;
+@property (nonatomic) NSUInteger eventTempCount;
+@property (nonatomic) NSUInteger peopleTempCount;
+@property (nonatomic) BOOL highVolume;
+@property (strong, nonatomic) NSMutableArray *highVolumeDateArray;
 
 @end
 
 @implementation ViewController
 
 #pragma mark - Lazy Properties
+
+- (BOOL)highVolume
+{
+    if (!_highVolume)
+    {
+        _highVolume = NO;
+    }
+    return _highVolume;
+}
+
+- (NSMutableArray *)highVolumeDateArray
+{
+    if (!_highVolumeDateArray)
+    {
+        _highVolumeDateArray = [NSMutableArray array];
+    }
+    return _highVolumeDateArray;
+}
+
+- (NSUInteger)eventTempCount
+{
+    if (!_eventTempCount)
+    {
+        _eventTempCount = 0;
+    }
+    return _eventTempCount;
+}
+
+- (NSUInteger)peopleTempCount
+{
+    if (!_peopleTempCount)
+    {
+        _peopleTempCount = 0;
+    }
+    return _peopleTempCount;
+}
+
+- (NSTimeInterval)startTime
+{
+    if (!_startTime)
+    {
+        _startTime = [[NSDate date] timeIntervalSince1970];
+    }
+    return _startTime;
+}
+
+- (NSDate *)maxDate
+{
+    return [NSDate date];
+}
 
 - (NSDateFormatter *)dateFormatter
 {
@@ -80,6 +139,7 @@
 - (void)awakeFromNib
 {
     [super awakeFromNib];
+    
 }
 
 - (void)viewDidLoad {
@@ -87,114 +147,255 @@
     
     [self registerForNotifications];
     [self restorePreviousSettings];
+    
+    [self updateCountLabelOfType:@"event" withCount:@0];
+    [self updateCountLabelOfType:@"people" withCount:@0];
+}
 
+-(void)setSelectedProjectIndex:(NSUInteger)index
+{
+    [self.projectPopUpButton selectItemAtIndex:index];
 }
 
 #pragma mark - IBActions
 
 - (IBAction)projectSelected:(NSPopUpButton *)sender {
     NSDictionary *project = self.projects[sender.indexOfSelectedItem];
-    [self appendToStatusLog:[NSString stringWithFormat:@"Selected Project = %@", project]];
+    [self appendToStatusLog:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"Selected Project = %@", project] attributes:@{NSForegroundColorAttributeName:[NSColor purpleColor]}]];
     
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    [userDefaults setObject:@(sender.indexOfSelectedItem) forKey:kMPUserDefaultsSelectedProjectKey];
-    [userDefaults synchronize];
+    [[Mixpanel sharedInstance] track:@"Selected Project"];
+    
+    [self syncUserDefaults];
 }
 
-- (IBAction)loadEventsButtonPressed:(id)sender {
-    [self.progressIndicator startAnimation:sender];
-    ExportRequest *request = [ExportRequest requestWithAPIKey:self.apiKey secret:self.apiSecret];
-    [request requestForEvents:self.eventsArray fromDate:self.fromDatePicker.dateValue toDate:self.toDatePicker.dateValue where:[self.whereTextField stringValue]];
-    
+- (void)syncUserDefaults {
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    [userDefaults setObject:@(self.projectPopUpButton.indexOfSelectedItem) forKey:kMPUserDefaultsSelectedProjectKey];
     [userDefaults setObject:[self.whereTextField stringValue] forKey:kMPUserDefaultsWhereClauseKey];
     [userDefaults setObject:[self.eventsArray componentsJoinedByString:@", "] forKey:kMPUserDefaultsEventsKey];
     [userDefaults setObject:self.fromDatePicker.dateValue forKey:kMPUserDefaultsFromDateKey];
     [userDefaults setObject:self.toDatePicker.dateValue forKey:kMPUserDefaultsToDateKey];
     [userDefaults synchronize];
 }
+
+- (IBAction)loadEventsButtonPressed:(id)sender {
+    [self.progressIndicator startAnimation:sender];
+    
+    ExportRequest *request = [ExportRequest requestWithAPIKey:self.apiKey secret:self.apiSecret outputType:@"DB"];
+    self.currentExport = request;
+    
+    if ([NSEvent modifierFlags] & NSAlternateKeyMask)
+    {
+        self.highVolume = YES;
+        NSMutableArray *datesArray = [NSMutableArray array];
+        NSDate *dateToAdd = self.fromDatePicker.dateValue;
+        do {
+            [datesArray addObject:dateToAdd];
+            dateToAdd = [NSDate dateWithTimeInterval:60*60*24 sinceDate:dateToAdd];
+        } while ([dateToAdd timeIntervalSinceDate:self.toDatePicker.dateValue] < 1);
+        
+        [request highVolumeRequestForEvents:self.eventsArray withArrayOfDates:datesArray where:[self.whereTextField stringValue]];
+    } else
+    {
+        [request requestForEvents:self.eventsArray fromDate:self.fromDatePicker.dateValue toDate:self.toDatePicker.dateValue where:[self.whereTextField stringValue]];
+    }
+
+    [self syncUserDefaults];
+}
 - (IBAction)loadPeopleButtonPressed:(id)sender {
     [self.progressIndicator startAnimation:sender];
-    ExportRequest *request = [ExportRequest requestWithAPIKey:self.apiKey secret:self.apiSecret];
+    ExportRequest *request = [ExportRequest requestWithAPIKey:self.apiKey secret:self.apiSecret outputType:@"DB"];
+    self.currentExport = request;
     [request requestForPeopleWhere:[self.whereTextField stringValue] sessionID:@"" page:0];
     
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    [userDefaults setObject:[self.whereTextField stringValue] forKey:kMPUserDefaultsWhereClauseKey];
-    [userDefaults synchronize];
+    [self syncUserDefaults];
 }
 - (IBAction)resetButtonPressed:(id)sender {
     [self.progressIndicator startAnimation:sender];
     
-    __block AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
+    [[Mixpanel sharedInstance] track:@"Reset Pressed"];
     
-    dispatch_sync(appDelegate.manager.dispatchQueue, ^{
-        
-        CBLDatabase *database = appDelegate.database;
-        
-        NSError *deletionError;
-        [database deleteDatabase:&deletionError];
-        if (!deletionError)
-        {
-            NSError *creationError;
-            [appDelegate.manager databaseNamed:kMPCBLDatabaseName error:&creationError];
-            if (!creationError)
-            {
-                [appDelegate setupCouchbaseLite];
-            } else
-            {
-                [self appendToStatusLog:[NSString stringWithFormat:@"Error creating new database. Error message: %@", creationError.localizedDescription]];
-            }
-        } else
-        {
-            [self appendToStatusLog:[NSString stringWithFormat:@"Error deleting database. Error message: %@", deletionError.localizedDescription]];
-        }
-        
-    });
+    AppDelegate *appDelegate = (AppDelegate *) [[NSApplication sharedApplication] delegate];
+    
+    [appDelegate.connection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+        [transaction removeAllObjectsInAllCollections];
+    }];
+    [self appendToStatusLog:[[NSAttributedString alloc] initWithString:@"Database Reset!" attributes:@{NSForegroundColorAttributeName:[NSColor orangeColor]}]];
     
     [self updateCountLabelOfType:@"event" withCount:@0];
     [self updateCountLabelOfType:@"people" withCount:@0];
+    self.eventTempCount = 0;
+    self.peopleTempCount = 0;
+    
     [self.progressIndicator stopAnimation:sender];
+}
+
+- (IBAction)quickEventsExportPressed:(NSButton *)sender {
+    [self.progressIndicator startAnimation:sender];
+
+    NSString *outputType = (sender.tag == 0) ? @"CSV" : @"JSON";
+    ExportRequest *request = [ExportRequest requestWithAPIKey:self.apiKey secret:self.apiSecret outputType:outputType];
+    self.currentExport = request;
+    
+    if ([NSEvent modifierFlags] & NSAlternateKeyMask)
+    {
+        self.highVolume = YES;
+        NSMutableArray *datesArray = [NSMutableArray array];
+        NSDate *dateToAdd = self.fromDatePicker.dateValue;
+        do {
+            [datesArray addObject:dateToAdd];
+            dateToAdd = [NSDate dateWithTimeInterval:60*60*24 sinceDate:dateToAdd];
+        } while ([dateToAdd timeIntervalSinceDate:self.toDatePicker.dateValue] < 1);
+        
+        [request highVolumeRequestForEvents:self.eventsArray withArrayOfDates:datesArray where:[self.whereTextField stringValue]];
+    } else
+    {
+        [request requestForEvents:self.eventsArray fromDate:self.fromDatePicker.dateValue toDate:self.toDatePicker.dateValue where:[self.whereTextField stringValue]];
+    }
+    
+    [self syncUserDefaults];
+}
+
+- (IBAction)quickPeopleExportPressed:(NSButton *)sender {
+    [self.progressIndicator startAnimation:sender];
+    NSString *outputType = (sender.tag == 0) ? @"CSV" : @"JSON";
+    ExportRequest *request = [ExportRequest requestWithAPIKey:self.apiKey secret:self.apiSecret outputType:outputType];
+    self.currentExport = request;
+    [request requestForPeopleWhere:[self.whereTextField stringValue] sessionID:@"" page:0];
+    
+    [self syncUserDefaults];
+}
+
+- (IBAction)cancelRequestPressed:(id)sender {
+    if (self.currentExport)
+    {
+        [self.currentExport cancel];
+        self.currentExport = nil;
+        [self.progressIndicator stopAnimation:sender];
+    }
 }
 
 #pragma mark - NSNotification Methods
 
 - (void)registerForNotifications {
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveCSVNotification:) name:kMPCSVWritingBegan object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveCSVNotification:) name:kMPCSVWritingEnded object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveExportNotification:) name:kMPExportBegan object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveExportNotification:) name:kMPExportUpdate object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveExportNotification:) name:kMPExportEnd object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(editingDidEnd:)
+                                                 name:NSControlTextDidEndEditingNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveDBWritingNotification:) name:kMPDBWritingUpdate object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveDBWritingNotification:) name:kMPDBWritingEnded object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveFileWritingNotification:) name:kMPFileWritingBegan object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveFileWritingNotification:) name:kMPFileWritingUpdate object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveFileWritingNotification:) name:kMPFileWritingEnded object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveAPIRequestNotification:) name:kMPAPIRequestBegan object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveAPIRequestNotification:) name:kMPAPIRequestUpdate object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveAPIRequestNotification:) name:kMPAPIRequestEnded object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveAPIRequestNotification:) name:kMPAPIRequestCancelled object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveAPIRequestNotification:) name:kMPAPIRequestFailed object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(receiveStatusUpdate:) name:kMPStatusUpdate object:nil];
 }
 
-- (void)receiveExportNotification:(NSNotification *)notification
+- (void)receiveAPIRequestNotification:(NSNotification *)notification
 {
-    if ([[notification name] isEqualToString:kMPExportBegan])
+    if ([[notification name] isEqualToString:kMPAPIRequestBegan])
     {
-        [self.progressIndicator startAnimation:self];
-    } else if ([[notification name] isEqualToString:kMPExportUpdate] || [[notification name] isEqualToString:kMPExportEnd])
+        // [self.progressIndicator startAnimation:self];
+    } else if ([[notification name] isEqualToString:kMPAPIRequestUpdate] || [[notification name] isEqualToString:kMPAPIRequestEnded])
     {
-        NSNumber *count = [notification userInfo][kMPUserInfoKeyCount];
-        NSString *type = [notification userInfo][kMPUserInfoKeyType];
-        [self updateCountLabelOfType:type withCount:count];
-        if ([[notification name] isEqualToString:kMPExportEnd])
+        if ([[notification name] isEqualToString:kMPAPIRequestEnded])
         {
+            self.currentExport = nil;
             [self.progressIndicator stopAnimation:self];
+            if ([notification userInfo][kMPUserInfoKeyType])
+            {
+                NSString *type = [notification userInfo][kMPUserInfoKeyType];
+                if ([type isEqualToString:@"people"])
+                {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [self updateCountLabelOfType:@"people" withCount:@([self peopleCount])];
+                    });
+                } else if ([type isEqualToString:@"event"])
+                {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [self updateCountLabelOfType:@"event" withCount:@([self eventCount])];
+                    });
+                }
+            }
         }
+    } else if ([[notification name] isEqualToString:kMPAPIRequestCancelled])
+    {
+        [self appendToStatusLog:[[NSAttributedString alloc] initWithString:@"API Request Cancelled!" attributes:@{NSForegroundColorAttributeName:[NSColor orangeColor]}]];
     }
 }
 
-- (void)receiveCSVNotification:(NSNotification *)notification
+- (void)receiveDBWritingNotification:(NSNotification *)notification
 {
-    if ([[notification name] isEqualToString:kMPCSVWritingBegan])
+    if ([notification userInfo])
     {
-        [self.progressIndicator startAnimation:self];
-        [self appendToStatusLog:@"CSV Export Began"];
-    } else if ([[notification name] isEqualToString:kMPCSVWritingEnded])
-    {
-        [self.progressIndicator stopAnimation:self];
-        [self appendToStatusLog:@"CSV Export Ended"];
+        NSDictionary *userInfo = [notification userInfo];
+        NSString *type = [NSString string];
+        NSNumber *count = @0;
+        if (userInfo[kMPUserInfoKeyType]) type = userInfo[kMPUserInfoKeyType];
+        if (userInfo[kMPUserInfoKeyCount]) count = userInfo[kMPUserInfoKeyCount];
+        
+        if ([[notification name] isEqualToString:kMPDBWritingUpdate] || [[notification name] isEqualToString:kMPDBWritingEnded])
+        {
+            
+            
+            
+//            NSUInteger currentTempCount = [type isEqualToString:@"event"] ? self.eventTempCount : self.peopleTempCount;
+//            NSUInteger updatedTempCount = currentTempCount + [count integerValue];
+//            [self updateCountLabelOfType:type withCount:@(updatedTempCount)];
+//            if ([type isEqualToString:@"event"])
+//            {
+//                self.eventTempCount = updatedTempCount;
+//            } else
+//            {
+//                self.peopleTempCount = updatedTempCount;
+//            }
+            
+//            if ([[notification name] isEqualToString:kMPDBWritingEnded])
+//            {
+//                if ([type isEqualToString:@"people"])
+//                {
+//                    dispatch_async(dispatch_get_main_queue(), ^{
+//                        [self updateCountLabelOfType:@"people" withCount:@([self peopleCount])];
+//                    });
+//                } else if ([type isEqualToString:@"event"])
+//                {
+//                    dispatch_async(dispatch_get_main_queue(), ^{
+//                        [self updateCountLabelOfType:@"event" withCount:@([self eventCount])];
+//                    });
+//                }
+//                
+//                [self.progressIndicator stopAnimation:self];
+//            }
+        }
     }
+    
+}
+
+- (void)receiveFileWritingNotification:(NSNotification *)notification
+{
+    NSString *format = [[notification userInfo] objectForKey:kMPFileWritingFormatKey];
+    if ([[notification name] isEqualToString:kMPFileWritingBegan])
+    {
+        self.startTime = [[NSDate date] timeIntervalSince1970];
+        [self.progressIndicator startAnimation:self];
+        [self appendToStatusLog:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@ export began",format] attributes:@{NSForegroundColorAttributeName:[NSColor magentaColor]}]];
+    } else if ([[notification name] isEqualToString:kMPFileWritingEnded])
+    {
+        NSString *exportObject = [[notification userInfo] objectForKey:kMPFileWritingExportObjectKey];
+        NSString *exportType = [[notification userInfo] objectForKey:kMPFileWritingExportTypeKey];
+        NSNumber *rows = [[notification userInfo] objectForKey:kMPFileWritingCount];
+        [[Mixpanel sharedInstance] track:@"File Export" properties:@{@"$duration":@([[NSDate date] timeIntervalSince1970] - self.startTime),@"Object":exportObject,@"Type":exportType,@"Rows":rows}];
+        [self.progressIndicator stopAnimation:self];
+        [self appendToStatusLog:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@ export ended - %@ %@ exported",format,rows,exportObject] attributes:@{NSForegroundColorAttributeName:[NSColor magentaColor]}]];
+    }
+}
+
+- (void)editingDidEnd:(NSNotification *)notification
+{
+    [self.userDefaultsController save:self];
 }
 
 - (void)receiveStatusUpdate:(NSNotification *)notification
@@ -204,6 +405,16 @@
         [self appendToStatusLog:[notification userInfo][kMPUserInfoKeyStatus]];
     }
 }
+
+- (void)prepareForSegue:(NSStoryboardSegue *)segue sender:(id)sender
+{
+    if ([segue.identifier isEqualToString:@"editProject"])
+    {
+        ProjectEditViewController *pvc = (ProjectEditViewController *)segue.destinationController;
+        [pvc.projectPopUpButton selectItemAtIndex:self.projectPopUpButton.indexOfSelectedItem];
+    }
+}
+
 
 #pragma mark - Utility Methods
 
@@ -243,14 +454,9 @@
     self.toDatePicker.dateValue = yesterday;
 }
 
-- (void)setSelectedProjectIndex:(NSUInteger)index
-{
-    [self.projectPopUpButton selectItemAtIndex:index];
-}
-
 - (void)updateCountLabels {
-    self.eventCountLabel.stringValue = [NSString stringWithFormat:@"%@ Events Loaded", [self eventCount]];
-    self.peopleCountLabel.stringValue = [NSString stringWithFormat:@"%@ People Loaded", [self peopleCount]];
+    self.eventCountLabel.stringValue = [NSString stringWithFormat:@"%lu Events Loaded", [self eventCount]];
+    self.peopleCountLabel.stringValue = [NSString stringWithFormat:@"%lu People Loaded", [self peopleCount]];
 }
 
 - (void)updateCountLabelOfType:(NSString *)type withCount:(NSNumber *)count
@@ -264,80 +470,45 @@
     }
 }
 
-- (void)appendToStatusLog:(NSString*)text
+- (void)appendToStatusLog:(NSAttributedString*)text
 {
     dispatch_async(dispatch_get_main_queue(), ^{
-        NSAttributedString* attr = [[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@\n",text]];
         
-        [[self.statusLogTextView textStorage] appendAttributedString:attr];
+        [[self.statusLogTextView textStorage] appendAttributedString:text];
+        
+        NSAttributedString* newLine = [[NSAttributedString alloc] initWithString:@"\n\n"];
+        [[self.statusLogTextView textStorage] appendAttributedString:newLine];
+        
+        [self.statusLogTextView setEditable:YES];
+        [self.statusLogTextView checkTextInDocument:nil];
+        [self.statusLogTextView setEditable:NO];
+        
         [self.statusLogTextView scrollRangeToVisible:NSMakeRange([[self.statusLogTextView string] length], 0)];
     });
 }
 
-- (NSNumber *)eventCount
+- (NSUInteger)eventCount
 {
-    __block AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
-    __block NSNumber *eventCount;
+    AppDelegate *appDelegate = (AppDelegate *) [[NSApplication sharedApplication] delegate];
+    __block NSUInteger count;
     
-    dispatch_sync(appDelegate.manager.dispatchQueue, ^{
-        
-        CBLDatabase *database = appDelegate.database;
-        
-        CBLView *eventView = [database viewNamed:kMPCBLViewNameEvents];
-        CBLQuery *eventQuery = [eventView createQuery];
-        NSError *eventError;
-        CBLQueryEnumerator *eventEnum = [eventQuery run:&eventError];
-        
-        if (eventError)
-        {
-            NSLog(@"Error querying events. Error messsage: %@",eventError.localizedDescription);
-            eventCount = @(-1);
-        } else
-        {
-            if ([eventEnum count])
-            {
-                eventCount = [[eventEnum rowAtIndex:0] value];
-            } else
-            {
-                eventCount = @0;
-            }
-        }
-    });
-    return eventCount;
+    [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
+        count = [transaction numberOfKeysInCollection:kMPDBCollectionNameEvents];
+    }];
     
+    return count;
 }
 
-- (NSNumber *)peopleCount
+- (NSUInteger)peopleCount
 {
-    __block AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
-    __block NSNumber *peopleCount;
+    AppDelegate *appDelegate = (AppDelegate *) [[NSApplication sharedApplication] delegate];
+    __block NSUInteger count;
     
-    dispatch_sync(appDelegate.manager.dispatchQueue, ^{
-        CBLDatabase *database = appDelegate.database;
-        
-        NSError *peopleError;
-        CBLView *peopleView = [database viewNamed:kMPCBLViewNamePeople];
-        CBLQuery *peopleQuery = [peopleView createQuery];
-        CBLQueryEnumerator *peopleEnum = [peopleQuery run:&peopleError];
-        if (peopleError)
-        {
-            NSLog(@"Error querying people. Error message: %@",peopleError.localizedDescription);
-            peopleCount = @(-1);
-        } else
-        {
-            if ([peopleEnum count])
-            {
-                peopleCount = [[peopleEnum rowAtIndex:0] value];
-            } else
-            {
-                peopleCount = @0;
-            }
-            
-        }
-        
-    });
+    [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
+        count = [transaction numberOfKeysInCollection:kMPDBCollectionNamePeople];
+    }];
     
-    return peopleCount;
+    return count;
 }
 
 @end

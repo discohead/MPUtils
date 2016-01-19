@@ -57,55 +57,52 @@ extern NSString *const kMPUserDefaultsEventsKey;
 extern NSString *const kMPUserDefaultsFromDateKey;
 extern NSString *const kMPUserDefaultsToDateKey;
 
+#pragma mark - File Export Types
+
+extern NSString *const kMPExportObjectEvents;
+extern NSString *const kMPExportObjectPeople;
+extern NSString *const kMPExportObjectTransactions;
+extern NSString *const kMPExportFormatCSV;
+extern NSString *const kMPExportFormatJSON;
+extern NSString *const kMPExportTypeEventsRaw;
+extern NSString *const kMPExportTypeEventsCombined;
+extern NSString *const kMPExportTypePeopleProfiles;
+extern NSString *const kMPExportTypePeopleFromEvents;
+extern NSString *const kMPExportTypeTransactions;
+
 #pragma mark - NSNotificationCenter
 
-extern NSString *const kMPCSVWritingBegan;
-extern NSString *const kMPCSVWritingEnded;
-extern NSString *const kMPExportBegan;
-extern NSString *const kMPExportUpdate;
-extern NSString *const kMPExportEnd;
+extern NSString *const kMPDBWritingBegan;
+extern NSString *const kMPDBWritingUpdate;
+extern NSString *const kMPDBWritingEnded;
+extern NSString *const kMPFileWritingBegan;
+extern NSString *const kMPFileWritingUpdate;
+extern NSString *const kMPFileWritingEnded;
+extern NSString *const kMPFileWritingExportObjectKey;
+extern NSString *const kMPFileWritingExportTypeKey;
+extern NSString *const kMPFileWritingFormatKey;
+extern NSString *const kMPFileWritingCount;
+extern NSString *const kMPAPIRequestBegan;
+extern NSString *const kMPAPIRequestUpdate;
+extern NSString *const kMPAPIRequestEnded;
+extern NSString *const kMPAPIRequestCancelled;
+extern NSString *const kMPAPIRequestFailed;
 extern NSString *const kMPUserInfoKeyCount;
 extern NSString *const kMPUserInfoKeyType;
+extern NSString *const kMPUserInfoKeyHighVolume;
 extern NSString *const kMPStatusUpdate;
 extern NSString *const kMPUserInfoKeyStatus;
 
-#pragma mark - Couchbase Lite
+#pragma mark - YapDatabase
 
-extern NSString *const kMPCBLDatabaseName;
-extern NSString *const kMPCBLThreadName;
-
-extern NSString *const kMPCBLDocumentTypeEvent;
-extern NSString *const kMPCBLDocumentTypePeopleProfile;
-extern NSString *const kMPCBLDocumentTypeEventProperties;
-extern NSString *const kMPCBLDocumentTypePeopleProperties;
-
-extern NSString *const kMPCBLDocumentKeyType;
-extern NSString *const kMPCBLDocumentKeyID;
-extern NSString *const kMPCBLDocumentKeyEventPropertyKeys;
-extern NSString *const kMPCBLDocumentKeyPeoplePropertyKeys;
-extern NSString *const kMPCBLDocumentKeyTransactionPropertyKeys;
-
-extern NSString *const kMPCBLPeopleDocumentKeyDistinctID;
-extern NSString *const kMPCBLPeopleDocumentKeyProperties;
-extern NSString *const kMPCBLPeopleDocumentKeyTransactions;
-
-extern NSString *const kMPCBLEventDocumentKeyEvent;
-extern NSString *const kMPCBLEventDocumentKeyProperties;
-extern NSString *const kMPCBLEventDocumentKeyDistinctID;
-
-extern NSString *const kMPCBLDocumentIDEventProperties;
-extern NSString *const kMPCBLDocumentIDPeopleProperties;
-extern NSString *const kMPCBLDocumentIDTransactionProperties;
-
-extern NSString *const kMPCBLViewNameEvents;
-extern NSString *const kMPCBLViewNameEventDistinctIDs;
-extern NSString *const kMPCBLViewNamePeople;
-extern NSString *const kMPCBLViewNameCombined;
-extern NSString *const kMPCBLViewNameTransactions;
-extern NSString *const kMPCBLViewNameEventCount;
-extern NSString *const kMPCBLViewNameEventProperties;
-extern NSString *const kMPCBLViewNamePeopleCount;
-extern NSString *const kmPCBlViewNamePeopleProperties;
+extern NSString *const kMPDBCollectionNameEvents;
+extern NSString *const kMPDBCollectionNamePeople;
+extern NSString *const kMPDBCollectionNamePropertiesPeople;
+extern NSString *const kMPDBCollectionNamePropertiesEvents;
+extern NSString *const kMPDBCollectionNamePropertiesTransactions;
+extern NSString *const kMPDBPropertiesKeyTransactions;
+extern NSString *const kMPDBPropertiesKeyPeople;
+extern NSString *const kMPDBPropertiesKeyEvents;
 
 @end
 

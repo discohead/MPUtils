@@ -7,25 +7,19 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7F087F071B46EF130044A9B9 /* JSONWriter.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F087F061B46EF130044A9B9 /* JSONWriter.m */; };
 		7F30AC0F1AC7FBF700F85184 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC0E1AC7FBF700F85184 /* AppDelegate.m */; };
 		7F30AC111AC7FBF700F85184 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC101AC7FBF700F85184 /* main.m */; };
 		7F30AC141AC7FBF700F85184 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC131AC7FBF700F85184 /* ViewController.m */; };
 		7F30AC161AC7FBF700F85184 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7F30AC151AC7FBF700F85184 /* Images.xcassets */; };
 		7F30AC191AC7FBF800F85184 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7F30AC171AC7FBF800F85184 /* Main.storyboard */; };
 		7F30AC251AC7FBF800F85184 /* MPUtilsTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC241AC7FBF800F85184 /* MPUtilsTests.m */; };
-		7F30AC311AC7FC1E00F85184 /* CouchbaseLite.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC2F1AC7FC1600F85184 /* CouchbaseLite.framework */; };
-		7F30AC321AC7FC1E00F85184 /* CouchbaseLite.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC2F1AC7FC1600F85184 /* CouchbaseLite.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		7F30AC351AC7FC2800F85184 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC341AC7FC2800F85184 /* CFNetwork.framework */; };
-		7F30AC371AC7FC2E00F85184 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC361AC7FC2E00F85184 /* Security.framework */; };
-		7F30AC391AC7FC4000F85184 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC381AC7FC4000F85184 /* SystemConfiguration.framework */; };
-		7F30AC3B1AC7FC4A00F85184 /* libsqlite3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC3A1AC7FC4A00F85184 /* libsqlite3.dylib */; };
-		7F30AC3D1AC7FC5400F85184 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F30AC3C1AC7FC5400F85184 /* libz.dylib */; };
 		7F30AC481AC7FCC300F85184 /* CHCSVParser.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC471AC7FCC300F85184 /* CHCSVParser.m */; };
 		7F30AC551AC7FD1700F85184 /* ExportRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC541AC7FD1700F85184 /* ExportRequest.m */; };
 		7F30AC581AC7FE6E00F85184 /* MPUConstants.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC571AC7FE6E00F85184 /* MPUConstants.m */; };
 		7F30AC5C1AC7FE8700F85184 /* NewProjectViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */; };
 		7F30AC611AC8007700F85184 /* NSString+Hashes.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F30AC601AC8007700F85184 /* NSString+Hashes.m */; };
-		7F609C771AC845EF00807CA6 /* CSVParser.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F609C761AC845EF00807CA6 /* CSVParser.m */; };
+		7F609C771AC845EF00807CA6 /* CSVWriter.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F609C761AC845EF00807CA6 /* CSVWriter.m */; };
 		7F862C7B1AD5885900968B1D /* ProjectEditViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F862C7A1AD5885900968B1D /* ProjectEditViewController.m */; };
 		C9A3A1D447FF071B1253AD8A /* libPods.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2520AD2E8E9D3B7257C95380 /* libPods.a */; };
 /* End PBXBuildFile section */
@@ -47,7 +41,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				7F30AC321AC7FC1E00F85184 /* CouchbaseLite.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -56,6 +49,8 @@
 
 /* Begin PBXFileReference section */
 		2520AD2E8E9D3B7257C95380 /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		7F087F051B46EF130044A9B9 /* JSONWriter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JSONWriter.h; sourceTree = "<group>"; };
+		7F087F061B46EF130044A9B9 /* JSONWriter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JSONWriter.m; sourceTree = "<group>"; };
 		7F30AC081AC7FBF700F85184 /* MPUtils.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MPUtils.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7F30AC0C1AC7FBF700F85184 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		7F30AC0D1AC7FBF700F85184 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -68,26 +63,20 @@
 		7F30AC1E1AC7FBF800F85184 /* MPUtilsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MPUtilsTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7F30AC231AC7FBF800F85184 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		7F30AC241AC7FBF800F85184 /* MPUtilsTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MPUtilsTests.m; sourceTree = "<group>"; };
-		7F30AC2F1AC7FC1600F85184 /* CouchbaseLite.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CouchbaseLite.framework; sourceTree = "<group>"; };
-		7F30AC341AC7FC2800F85184 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
-		7F30AC361AC7FC2E00F85184 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
-		7F30AC381AC7FC4000F85184 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
-		7F30AC3A1AC7FC4A00F85184 /* libsqlite3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsqlite3.dylib; path = usr/lib/libsqlite3.dylib; sourceTree = SDKROOT; };
-		7F30AC3C1AC7FC5400F85184 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		7F30AC461AC7FCC300F85184 /* CHCSVParser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CHCSVParser.h; path = CHCSVParser/CHCSVParser.h; sourceTree = "<group>"; };
 		7F30AC471AC7FCC300F85184 /* CHCSVParser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CHCSVParser.m; path = CHCSVParser/CHCSVParser.m; sourceTree = "<group>"; };
 		7F30AC531AC7FD1700F85184 /* ExportRequest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ExportRequest.h; sourceTree = "<group>"; };
 		7F30AC541AC7FD1700F85184 /* ExportRequest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ExportRequest.m; sourceTree = "<group>"; };
 		7F30AC561AC7FE6E00F85184 /* MPUConstants.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPUConstants.h; sourceTree = "<group>"; };
 		7F30AC571AC7FE6E00F85184 /* MPUConstants.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPUConstants.m; sourceTree = "<group>"; };
-		7F30AC5A1AC7FE8700F85184 /* NewProjectViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NewProjectViewController.h; sourceTree = "<group>"; };
-		7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NewProjectViewController.m; sourceTree = "<group>"; };
+		7F30AC5A1AC7FE8700F85184 /* NewProjectViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NewProjectViewController.h; path = View/NewProjectViewController.h; sourceTree = "<group>"; };
+		7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = NewProjectViewController.m; path = View/NewProjectViewController.m; sourceTree = "<group>"; };
 		7F30AC5F1AC8007700F85184 /* NSString+Hashes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+Hashes.h"; sourceTree = "<group>"; };
 		7F30AC601AC8007700F85184 /* NSString+Hashes.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Hashes.m"; sourceTree = "<group>"; };
-		7F609C751AC845EF00807CA6 /* CSVParser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CSVParser.h; sourceTree = "<group>"; };
-		7F609C761AC845EF00807CA6 /* CSVParser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CSVParser.m; sourceTree = "<group>"; };
-		7F862C791AD5885900968B1D /* ProjectEditViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ProjectEditViewController.h; sourceTree = "<group>"; };
-		7F862C7A1AD5885900968B1D /* ProjectEditViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProjectEditViewController.m; sourceTree = "<group>"; };
+		7F609C751AC845EF00807CA6 /* CSVWriter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CSVWriter.h; sourceTree = "<group>"; };
+		7F609C761AC845EF00807CA6 /* CSVWriter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CSVWriter.m; sourceTree = "<group>"; };
+		7F862C791AD5885900968B1D /* ProjectEditViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ProjectEditViewController.h; path = View/ProjectEditViewController.h; sourceTree = "<group>"; };
+		7F862C7A1AD5885900968B1D /* ProjectEditViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = ProjectEditViewController.m; path = View/ProjectEditViewController.m; sourceTree = "<group>"; };
 		C40F948E161298748CCD40DE /* Pods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.debug.xcconfig; path = "Pods/Target Support Files/Pods/Pods.debug.xcconfig"; sourceTree = "<group>"; };
 		C5DF7360311B9FAEEFD7DED7 /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -97,12 +86,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7F30AC3D1AC7FC5400F85184 /* libz.dylib in Frameworks */,
-				7F30AC3B1AC7FC4A00F85184 /* libsqlite3.dylib in Frameworks */,
-				7F30AC391AC7FC4000F85184 /* SystemConfiguration.framework in Frameworks */,
-				7F30AC371AC7FC2E00F85184 /* Security.framework in Frameworks */,
-				7F30AC351AC7FC2800F85184 /* CFNetwork.framework in Frameworks */,
-				7F30AC311AC7FC1E00F85184 /* CouchbaseLite.framework in Frameworks */,
 				C9A3A1D447FF071B1253AD8A /* libPods.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -117,6 +100,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		7F087F041B46ECF50044A9B9 /* Controllers */ = {
+			isa = PBXGroup;
+			children = (
+				7F30AC121AC7FBF700F85184 /* ViewController.h */,
+				7F30AC131AC7FBF700F85184 /* ViewController.m */,
+				7F862C791AD5885900968B1D /* ProjectEditViewController.h */,
+				7F862C7A1AD5885900968B1D /* ProjectEditViewController.m */,
+				7F30AC5A1AC7FE8700F85184 /* NewProjectViewController.h */,
+				7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */,
+			);
+			name = Controllers;
+			sourceTree = "<group>";
+		};
 		7F30ABFF1AC7FBF700F85184 = {
 			isa = PBXGroup;
 			children = (
@@ -142,16 +138,17 @@
 		7F30AC0A1AC7FBF700F85184 /* MPUtils */ = {
 			isa = PBXGroup;
 			children = (
-				7F30AC531AC7FD1700F85184 /* ExportRequest.h */,
-				7F30AC541AC7FD1700F85184 /* ExportRequest.m */,
 				7F30AC0D1AC7FBF700F85184 /* AppDelegate.h */,
 				7F30AC0E1AC7FBF700F85184 /* AppDelegate.m */,
-				7F30AC121AC7FBF700F85184 /* ViewController.h */,
-				7F30AC131AC7FBF700F85184 /* ViewController.m */,
-				7F609C751AC845EF00807CA6 /* CSVParser.h */,
-				7F609C761AC845EF00807CA6 /* CSVParser.m */,
-				7F30AC151AC7FBF700F85184 /* Images.xcassets */,
+				7F30AC531AC7FD1700F85184 /* ExportRequest.h */,
+				7F30AC541AC7FD1700F85184 /* ExportRequest.m */,
+				7F609C751AC845EF00807CA6 /* CSVWriter.h */,
+				7F609C761AC845EF00807CA6 /* CSVWriter.m */,
+				7F087F051B46EF130044A9B9 /* JSONWriter.h */,
+				7F087F061B46EF130044A9B9 /* JSONWriter.m */,
+				7F087F041B46ECF50044A9B9 /* Controllers */,
 				7F30AC591AC7FE8700F85184 /* View */,
+				7F30AC151AC7FBF700F85184 /* Images.xcassets */,
 				7F30AC0B1AC7FBF700F85184 /* Supporting Files */,
 			);
 			path = MPUtils;
@@ -188,12 +185,6 @@
 		7F30AC2E1AC7FC1600F85184 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				7F30AC3C1AC7FC5400F85184 /* libz.dylib */,
-				7F30AC3A1AC7FC4A00F85184 /* libsqlite3.dylib */,
-				7F30AC381AC7FC4000F85184 /* SystemConfiguration.framework */,
-				7F30AC361AC7FC2E00F85184 /* Security.framework */,
-				7F30AC341AC7FC2800F85184 /* CFNetwork.framework */,
-				7F30AC2F1AC7FC1600F85184 /* CouchbaseLite.framework */,
 				2520AD2E8E9D3B7257C95380 /* libPods.a */,
 			);
 			path = Frameworks;
@@ -211,11 +202,7 @@
 		7F30AC591AC7FE8700F85184 /* View */ = {
 			isa = PBXGroup;
 			children = (
-				7F862C791AD5885900968B1D /* ProjectEditViewController.h */,
-				7F862C7A1AD5885900968B1D /* ProjectEditViewController.m */,
 				7F30AC171AC7FBF800F85184 /* Main.storyboard */,
-				7F30AC5A1AC7FE8700F85184 /* NewProjectViewController.h */,
-				7F30AC5B1AC7FE8700F85184 /* NewProjectViewController.m */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -290,6 +277,7 @@
 				TargetAttributes = {
 					7F30AC071AC7FBF700F85184 = {
 						CreatedOnToolsVersion = 6.1.1;
+						DevelopmentTeam = P63LP2LEL5;
 					};
 					7F30AC1D1AC7FBF800F85184 = {
 						CreatedOnToolsVersion = 6.1.1;
@@ -375,10 +363,11 @@
 			files = (
 				7F862C7B1AD5885900968B1D /* ProjectEditViewController.m in Sources */,
 				7F30AC141AC7FBF700F85184 /* ViewController.m in Sources */,
-				7F609C771AC845EF00807CA6 /* CSVParser.m in Sources */,
+				7F609C771AC845EF00807CA6 /* CSVWriter.m in Sources */,
 				7F30AC111AC7FBF700F85184 /* main.m in Sources */,
 				7F30AC0F1AC7FBF700F85184 /* AppDelegate.m in Sources */,
 				7F30AC611AC8007700F85184 /* NSString+Hashes.m in Sources */,
+				7F087F071B46EF130044A9B9 /* JSONWriter.m in Sources */,
 				7F30AC581AC7FE6E00F85184 /* MPUConstants.m in Sources */,
 				7F30AC551AC7FD1700F85184 /* ExportRequest.m in Sources */,
 				7F30AC5C1AC7FE8700F85184 /* NewProjectViewController.m in Sources */,
@@ -434,7 +423,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = "Mac Developer";
 				COPY_PHASE_STRIP = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -475,7 +464,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = "Mac Developer";
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -498,6 +487,8 @@
 			baseConfigurationReference = C40F948E161298748CCD40DE /* Pods.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Mac Developer";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -519,6 +510,7 @@
 					"-ObjC",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 			};
 			name = Debug;
 		};
@@ -527,6 +519,8 @@
 			baseConfigurationReference = C5DF7360311B9FAEEFD7DED7 /* Pods.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Mac Developer";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -544,6 +538,7 @@
 					"-ObjC",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 			};
 			name = Release;
 		};

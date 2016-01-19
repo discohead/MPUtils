@@ -9,5 +9,6 @@
 #import <Cocoa/Cocoa.h>
 
 @interface ProjectEditViewController : NSViewController
+@property (weak) IBOutlet NSPopUpButton *projectPopUpButton;
 
 @end
