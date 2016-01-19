@@ -13,7 +13,7 @@
 
 @interface JSONWriter ()
 
-@property (strong, nonatomic) NSString *filePath;
+@property (strong, nonatomic, readwrite) NSString *filePath;
 
 @end
 
@@ -21,25 +21,31 @@
 {
     NSOutputStream *_stream;
     NSStringEncoding _streamEncoding;
-}
-
-- (NSString *)filePath
-{
-    if (!_filePath)
-    {
-        _filePath = [NSString string];
-    }
-    return _filePath;
+    NSData *_openBracket;
+    NSData *_closeBracket;
+    NSData *_comma;
+    
 }
 
 -(instancetype)initForWritingToFile:(NSString *)filePath
 {
+    self = [super init];
     
-    NSOutputStream *outputStream = [NSOutputStream outputStreamToFileAtPath:filePath append:NO];
-    
-    [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"JSON writer path = %@",[[NSURL fileURLWithPath:filePath] absoluteString]] attributes:@{NSForegroundColorAttributeName:[NSColor darkGrayColor]}]];
-
-    return [self initWithOutputStream:outputStream];
+    if (self) {
+        NSOutputStream *outputStream = [NSOutputStream outputStreamToFileAtPath:filePath append:NO];
+        _stream = outputStream;
+        _openBracket = [[NSString stringWithFormat:@"["] dataUsingEncoding:NSUTF8StringEncoding];
+        _closeBracket = [[NSString stringWithFormat:@"]"] dataUsingEncoding:NSUTF8StringEncoding];
+        _comma = [[NSString stringWithFormat:@","] dataUsingEncoding:NSUTF8StringEncoding];
+        _filePath = filePath;
+        
+        if ([_stream streamStatus] == NSStreamStatusNotOpen) {
+            [_stream open];
+        }
+        
+        [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"JSON writer path = %@",[[NSURL fileURLWithPath:filePath] absoluteString]] attributes:@{NSForegroundColorAttributeName:[NSColor darkGrayColor]}]];
+    }
+    return self;
 }
 
 - (instancetype)initWithOutputStream:(NSOutputStream *)stream
@@ -47,6 +53,9 @@
     self = [super init];
     if (self) {
         _stream = stream;
+        _openBracket = [[NSString stringWithFormat:@"["] dataUsingEncoding:NSUTF8StringEncoding];
+        _closeBracket = [[NSString stringWithFormat:@"]"] dataUsingEncoding:NSUTF8StringEncoding];
+        _comma = [[NSString stringWithFormat:@","] dataUsingEncoding:NSUTF8StringEncoding];
         
         if ([_stream streamStatus] == NSStreamStatusNotOpen) {
             [_stream open];
@@ -55,25 +64,32 @@
     return self;
 }
 
+- (void)writeEvent:(NSDictionary *)event
+{
+    NSError *error;
+    [NSJSONSerialization writeJSONObject:event toStream:_stream options:NSJSONWritingPrettyPrinted error:&error];
+    
+    if (error)
+    {
+        [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"Error serializing JSON for event: %@\nError Message: %@",event,error.localizedDescription] attributes:@{NSForegroundColorAttributeName:[NSColor redColor]}]];
+    }
+}
+
 - (void)eventsWithPeopleProperties:(BOOL)peopleProps
 {
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingBegan object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatJSON}];
     
-    AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
+    AppDelegate *appDelegate = (AppDelegate *) [[NSApplication sharedApplication] delegate];
     __block NSUInteger index = 1;
     
     [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
         
         NSUInteger count = [transaction numberOfKeysInCollection:kMPDBCollectionNameEvents];
-
-        NSData *openBracket = [[NSString stringWithFormat:@"["] dataUsingEncoding:NSUTF8StringEncoding];
-        NSData *closeBracket = [[NSString stringWithFormat:@"]"] dataUsingEncoding:NSUTF8StringEncoding];
-        NSData *comma = [[NSString stringWithFormat:@","] dataUsingEncoding:NSUTF8StringEncoding];
         
-        [_stream write:[openBracket bytes] maxLength:[openBracket length]];
+        [self writeOpenBracket];
         
         [transaction enumerateKeysAndObjectsInCollection:kMPDBCollectionNameEvents usingBlock:^(NSString *key, NSDictionary *event, BOOL *stop) {
-            NSError *error;
+            
             
             if (peopleProps && event[@"properties"][@"distinct_id"])
             {
@@ -85,65 +101,89 @@
                     event = mutableEvent;
                 }
             }
-            
-            [NSJSONSerialization writeJSONObject:event toStream:_stream options:NSJSONWritingPrettyPrinted error:&error];
-            
-            if (error)
-            {
-                [self updateStatusWithString:[[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"Error serializing JSON for event: %@",event] attributes:@{NSForegroundColorAttributeName:[NSColor redColor]}]];
-            }
+            [self writeEvent:event];
             
             if (!(index == count)) {
-                [_stream write:[comma bytes] maxLength:[comma length]];
+                [self writeComma];
             }
             index++;
         }];
         
-        [_stream write:[closeBracket bytes] maxLength:[closeBracket length]];
+        [self writeCloseBracket];
     }];
     
+    // Notify ViewController
     NSString *subType = peopleProps ? kMPExportTypeEventsCombined : kMPExportTypeEventsRaw;
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingEnded object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatJSON, kMPFileWritingExportObjectKey:kMPExportObjectEvents,kMPFileWritingExportTypeKey:subType, kMPFileWritingCount:@(index-1)}];
+    
+    // Notify user
+    [self postUserNotificationWithTitle:@"JSON Export Complete" andInfoText:[NSString stringWithFormat:@"%lu events exported",index-1]];
 }
 
 - (void)peopleProfiles
 {
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingBegan object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatJSON}];
     
-    AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
+    AppDelegate *appDelegate = (AppDelegate *) [[NSApplication sharedApplication] delegate];
     __block NSUInteger index = 1;
     
     [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
         
         NSUInteger count = [transaction numberOfKeysInCollection:kMPDBCollectionNamePeople];
         
-        NSData *openBracket = [[NSString stringWithFormat:@"["] dataUsingEncoding:NSUTF8StringEncoding];
-        NSData *closeBracket = [[NSString stringWithFormat:@"]"] dataUsingEncoding:NSUTF8StringEncoding];
-        NSData *comma = [[NSString stringWithFormat:@","] dataUsingEncoding:NSUTF8StringEncoding];
-        
-        [_stream write:[openBracket bytes] maxLength:[openBracket length]];
+        [self writeOpenBracket];
         
         [transaction enumerateKeysAndObjectsInCollection:kMPDBCollectionNamePeople usingBlock:^(NSString *key, id profile, BOOL *stop) {
-            NSError *error;
-            [NSJSONSerialization writeJSONObject:profile toStream:_stream options:NSJSONWritingPrettyPrinted error:&error];
+            [self writeProfile:profile];
+            
             if (!(index == count))
             {
-                [_stream write:[comma bytes] maxLength:[comma length]];
+                [self writeComma];
             }
             index++;
         }];
         
-        [_stream write:[closeBracket bytes] maxLength:[closeBracket length]];
+        [self writeCloseBracket];
     }];
     
+    // Notify ViewController
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingEnded object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatJSON, kMPFileWritingExportObjectKey:kMPExportObjectPeople,kMPFileWritingExportTypeKey:kMPExportTypePeopleProfiles, kMPFileWritingCount:@(index-1)}];
+    
+    // Notify user
+    [self postUserNotificationWithTitle:@"JSON Export Complete" andInfoText:[NSString stringWithFormat:@"%lu profiles exported",index-1]];
+}
+
+- (void)writeProfile:(NSDictionary *)profile
+{
+    NSError *error;
+    [NSJSONSerialization writeJSONObject:profile toStream:_stream options:NSJSONWritingPrettyPrinted error:&error];
+    if (error)
+    {
+        NSString *message = [NSString stringWithFormat:@"Error writing profile: %@\n Error message: %@",profile,error.localizedDescription];
+        [self updateStatusWithString:[[NSAttributedString alloc] initWithString:message attributes:@{NSForegroundColorAttributeName:[NSColor redColor]}]];
+    }
+}
+
+- (void)writeOpenBracket
+{
+    [_stream write:[_openBracket bytes] maxLength:[_openBracket length]];
+}
+
+- (void)writeCloseBracket
+{
+    [_stream write:[_closeBracket bytes] maxLength:[_closeBracket length]];
+}
+
+- (void)writeComma
+{
+    [_stream write:[_comma bytes] maxLength:[_comma length]];
 }
 
 - (void)peopleFromEvents
 {
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingBegan object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatJSON}];
     
-    AppDelegate *appDelegate = [[NSApplication sharedApplication] delegate];
+    AppDelegate *appDelegate = (AppDelegate *) [[NSApplication sharedApplication] delegate];
     __block NSUInteger index = 1;
     
     NSMutableSet *distinctIDs = [NSMutableSet set];
@@ -158,11 +198,8 @@
     
     [appDelegate.connection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
         NSError *error;
-        NSData *openBracket = [[NSString stringWithFormat:@"["] dataUsingEncoding:NSUTF8StringEncoding];
-        NSData *closeBracket = [[NSString stringWithFormat:@"]"] dataUsingEncoding:NSUTF8StringEncoding];
-        NSData *comma = [[NSString stringWithFormat:@","] dataUsingEncoding:NSUTF8StringEncoding];
         
-        [_stream write:[openBracket bytes] maxLength:[openBracket length]];
+        [self writeOpenBracket];
         
         NSMutableArray *idsWithProfiles = [NSMutableArray array];
         
@@ -183,15 +220,19 @@
             [NSJSONSerialization writeJSONObject:profile toStream:_stream options:NSJSONWritingPrettyPrinted error:&error];
             if (!(index == count))
             {
-                [_stream write:[comma bytes] maxLength:[comma length]];
+                [self writeComma];
             }
             index++;
         }
         
-        [_stream write:[closeBracket bytes] maxLength:[closeBracket length]];
+        [self writeCloseBracket];
     }];
     
+    // Notify ViewController
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPFileWritingEnded object:nil userInfo:@{kMPFileWritingFormatKey:kMPExportFormatJSON, kMPFileWritingExportObjectKey:kMPExportObjectPeople, kMPFileWritingExportTypeKey:kMPExportTypePeopleFromEvents, kMPFileWritingCount:@(index-1)}];
+    
+    // Notify user
+    [self postUserNotificationWithTitle:@"JSON Export Complete" andInfoText:[NSString stringWithFormat:@"%lu profiles exported",index-1]];
     
 }
 
@@ -199,6 +240,17 @@
 {
     NSDictionary *statusInfo = @{kMPUserInfoKeyType:kMPStatusUpdate,kMPUserInfoKeyStatus:status};
     [[NSNotificationCenter defaultCenter] postNotificationName:kMPStatusUpdate object:nil userInfo:statusInfo];
+}
+
+- (void)postUserNotificationWithTitle:(NSString *)title andInfoText:(NSString *)infoText
+{
+    // Display desktop user notification
+    NSUserNotification *userNotification = [[NSUserNotification alloc] init];
+    userNotification.title = title;
+    userNotification.informativeText = infoText;
+    userNotification.soundName = NSUserNotificationDefaultSoundName;
+    
+    [[NSUserNotificationCenter defaultUserNotificationCenter] deliverNotification:userNotification];
 }
 
 @end

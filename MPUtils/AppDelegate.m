@@ -16,7 +16,6 @@
 
 @interface AppDelegate () <NSOpenSavePanelDelegate>
 
-@property (strong, nonatomic) NSString *basePath;
 @property (strong, nonatomic) NSString *databasePath;
 @property (weak, nonatomic) NSWindow *mainWindow;
 
@@ -82,6 +81,8 @@
 #pragma mark - App Life Cycle
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
+    
+    [[NSUserNotificationCenter defaultUserNotificationCenter] setDelegate:self];
     
     // Setup Database and connection
     self.database = [self sharedYapDatabase];
@@ -294,6 +295,13 @@
     [[Mixpanel sharedInstance] track:@"Opened Documentation"];
     
     [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"https://mixpanel.com/docs/api-documentation/data-export-api"]];
+}
+
+#pragma mark - NSUserNotificationCenter Delegate
+
+- (BOOL)userNotificationCenter:(NSUserNotificationCenter *)center shouldPresentNotification:(NSUserNotification *)notification
+{
+    return YES;
 }
 
 #pragma mark - Utility Methods

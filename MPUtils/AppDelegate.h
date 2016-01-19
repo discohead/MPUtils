@@ -10,10 +10,11 @@
 
 @class YapDatabase, YapDatabaseConnection;
 
-@interface AppDelegate : NSObject <NSApplicationDelegate>
+@interface AppDelegate : NSObject <NSApplicationDelegate, NSUserNotificationCenterDelegate>
 
 @property (strong, nonatomic) YapDatabase *database;
 @property (strong, nonatomic) YapDatabaseConnection *connection;
+@property (strong, nonatomic) NSString *basePath;
 
 @end
 

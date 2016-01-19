@@ -10,10 +10,18 @@
 
 @interface JSONWriter : NSObject
 
+@property (strong, nonatomic, readonly) NSString *filePath;
+
 - (instancetype)initForWritingToFile:(NSString *)filePath;
 
 - (void)eventsWithPeopleProperties:(BOOL)peopleProps;
 - (void)peopleProfiles;
 - (void)peopleFromEvents;
+
+- (void)writeEvent:(NSDictionary *)event;
+- (void)writeProfile:(NSDictionary *)profile;
+- (void)writeOpenBracket;
+- (void)writeCloseBracket;
+- (void)writeComma;
 
 @end

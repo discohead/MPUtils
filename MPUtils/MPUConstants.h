@@ -72,18 +72,24 @@ extern NSString *const kMPExportTypeTransactions;
 
 #pragma mark - NSNotificationCenter
 
+extern NSString *const kMPDBWritingBegan;
+extern NSString *const kMPDBWritingUpdate;
+extern NSString *const kMPDBWritingEnded;
 extern NSString *const kMPFileWritingBegan;
+extern NSString *const kMPFileWritingUpdate;
 extern NSString *const kMPFileWritingEnded;
 extern NSString *const kMPFileWritingExportObjectKey;
 extern NSString *const kMPFileWritingExportTypeKey;
 extern NSString *const kMPFileWritingFormatKey;
 extern NSString *const kMPFileWritingCount;
-extern NSString *const kMPExportBegan;
-extern NSString *const kMPExportUpdate;
-extern NSString *const kMPExportEnd;
-extern NSString *const kMPExportCancelled;
+extern NSString *const kMPAPIRequestBegan;
+extern NSString *const kMPAPIRequestUpdate;
+extern NSString *const kMPAPIRequestEnded;
+extern NSString *const kMPAPIRequestCancelled;
+extern NSString *const kMPAPIRequestFailed;
 extern NSString *const kMPUserInfoKeyCount;
 extern NSString *const kMPUserInfoKeyType;
+extern NSString *const kMPUserInfoKeyHighVolume;
 extern NSString *const kMPStatusUpdate;
 extern NSString *const kMPUserInfoKeyStatus;
 

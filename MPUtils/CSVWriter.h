@@ -10,10 +10,17 @@
 
 @interface CSVWriter : NSObject
 
+@property (strong, nonatomic, readonly) NSString *filePath;
+
 - (instancetype)initForWritingToFile:(NSString *)filePath;
 - (void)eventsWithPeopleProperties:(BOOL)peopleProperties;
 - (void)peopleProfiles;
 - (void)transactions;
 - (void)peopleFromEvents;
+
+
+- (void)writeHeadersForType:(NSString *)type withProperties:(NSArray *)properties;
+- (void)writeProfile:(NSDictionary *)profile withProperties:(NSArray *)properties;
+- (void)writeEvent:(NSDictionary *)event withProperties:(NSArray *)properties finishLine:(BOOL)finishLine;
 
 @end

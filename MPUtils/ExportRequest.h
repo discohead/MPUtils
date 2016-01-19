@@ -10,9 +10,12 @@
 
 @interface ExportRequest : NSObject
 
-+ (instancetype)requestWithAPIKey:(NSString *)apiKey secret:(NSString *)secret;
+
+
++ (instancetype)requestWithAPIKey:(NSString *)apiKey secret:(NSString *)secret outputType:(NSString *)outputType;
 - (void)requestWithURL:(NSURL *)baseURL params:(NSDictionary *)URLParams;
 - (void)requestForEvents:(NSArray *)events fromDate:(NSDate *)fromDate toDate:(NSDate *)toDate where:(NSString *)whereClause;
+- (void)highVolumeRequestForEvents:(NSArray *)events withArrayOfDates:(NSArray *)datesArray where:(NSString *)whereClause;
 - (void)requestForPeopleWhere:(NSString *)whereClause sessionID:(NSString *)sessionID page:(NSUInteger)page;
 - (void)cancel;
 

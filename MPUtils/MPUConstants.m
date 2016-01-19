@@ -72,18 +72,24 @@ NSString *const kMPExportTypeTransactions     = @"Transactions";
 
 #pragma mark - NSNotificationCenter
 
+NSString *const kMPDBWritingBegan           = @"DatabaseWritingBegan";
+NSString *const kMPDBWritingUpdate          = @"DatabaseWritingUpdate";
+NSString *const kMPDBWritingEnded           = @"DatabaseWritingEnded";
 NSString *const kMPFileWritingBegan         = @"FileWritingBegan";
+NSString *const kMPFileWritingUpdate        = @"FileWritingUpdate";
 NSString *const kMPFileWritingEnded         = @"FileWritingEnded";
 NSString *const kMPFileWritingExportObjectKey    = @"FileWritingExportType";
 NSString *const kMPFileWritingExportTypeKey = @"FileWritingExportSubType";
 NSString *const kMPFileWritingFormatKey        = @"FileWritingFormat";
 NSString *const kMPFileWritingCount         = @"FileWritingCount";
-NSString *const kMPExportBegan              = @"ExportBegan";
-NSString *const kMPExportUpdate             = @"ExportUpdate";
-NSString *const kMPExportEnd                = @"ExportEnd";
-NSString *const kMPExportCancelled          = @"ExportCancelled";
+NSString *const kMPAPIRequestBegan          = @"APIRequestBega";
+NSString *const kMPAPIRequestUpdate         = @"APIRequestUpdate";
+NSString *const kMPAPIRequestEnded          = @"APIRequestEnded";
+NSString *const kMPAPIRequestCancelled      = @"APIRequestCancelled";
+NSString *const kMPAPIRequestFailed         = @"APIRequestFailed";
 NSString *const kMPUserInfoKeyCount         = @"UserInfoKeyCount";
 NSString *const kMPUserInfoKeyType          = @"UserInfoKeyType";
+NSString *const kMPUserInfoKeyHighVolume    = @"UserInfoKeyHighVolume";
 NSString *const kMPStatusUpdate             = @"StatusUpdate";
 NSString *const kMPUserInfoKeyStatus        = @"UserInfoKeyStatus";
 
